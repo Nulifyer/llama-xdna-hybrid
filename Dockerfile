@@ -11,7 +11,8 @@ COPY . .
 RUN tools/fetch-llama.sh && \
     cmake -S . -B build-linux -DCMAKE_BUILD_TYPE=Release -DGGML_XDNA_NPU=ON && \
     cmake --build build-linux -j4 && \
-    GGML_VK_DISABLE_F16=1 GGML_VK_DISABLE_COOPMAT=1 GGML_XDNA_PINNED=0 \
+    VK_DRIVER_FILES="$(find /usr/share/vulkan/icd.d -name '*lvp*.json' -print -quit)" \
+    GGML_VK_VISIBLE_DEVICES=0 GGML_VK_DISABLE_F16=1 GGML_VK_DISABLE_COOPMAT=1 GGML_XDNA_PINNED=0 \
     ctest --test-dir build-linux -L 'host|nodriver' --output-on-failure && \
     tools/package-linux.sh /out
 
