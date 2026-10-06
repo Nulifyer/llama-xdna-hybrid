@@ -40,6 +40,18 @@ Ubuntu 26.04 userspace, XRT 2.21.75 and Mesa Vulkan. It does not install host
 drivers. Adjust the device path and groups to the host. `/dev/kfd` is not needed
 for Vulkan. The service runs as UID 10001; model mounts must be readable by it.
 
+New GHCR packages are private by default. Authenticate Docker before pulling,
+or use a configured Portainer registry. The homelab already has authenticated
+GHCR registry ID 4. Its helper can pull without exporting registry credentials:
+
+```bash
+PORTAINER_TIMEOUT=0 ./portainer.sh pull --registry 4 \
+  ghcr.io/nulifyer/llama-xdna-hybrid:linux-v0.1.0
+```
+
+That command runs from the separate Homelab repository. Image publishing uses
+the repository's GitHub Actions token; no personal token is embedded in a build.
+
 The launcher requires successful kernel self-test and both XDNA0 and Vulkan0.
 It refuses host-reference mode in hybrid serving. `HYBRID_REQUIRE_NPU=0` selects
 Vulkan alone for a comparison. `--list-devices`, `--version` and `--help` can be
@@ -82,12 +94,53 @@ The homelab's earlier FLM versus GPU timings do not predict this backend's gain.
 The default NPU copy budget is 20 GB and is bounded by available host/container
 memory. There is an additional GPU copy of the model and cache. Keep the budget
 conservative until the Linux driver allocation limits have been measured.
+An explicit `GGML_XDNA_MAX_COPY_GB` overrides that automatic budget. The device's
+advertised Vulkan memory is not the container limit. Measure host RAM, container
+memory and device use together. Enable llama-server `--metrics` for its request
+metrics; Docker resource statistics do not attribute every allocation by device.
 
 Upstream failure handling may finish an already scheduled piece on a slow CPU
 reference before moving later work to Vulkan. This can cause a long request
 delay. The launcher checks startup readiness; it does not fix that mid-request
 behavior. Do not advertise production recovery guarantees until it is tested
 and improved. GPU attention can also limit long-context speedups.
+
+## HX 370 verification
+
+The experimental [linux-v0.1.0 release](https://github.com/Nulifyer/llama-xdna-hybrid/releases/tag/linux-v0.1.0)
+was built by Linux CI, with all eight host/nodriver checks passing. Windows CI
+also passed. The release archive checksum was verified after download.
+The released image digest is
+`sha256:81692f3ddbb714423333390a84f4a6321bcb1af656520ce93ea25f768b14bdd8`.
+
+On HX 370, that image passed the NPU self-test, dispatch, matmul, injected-NaN
+fallback and memory-budget checks. GPU-only and hybrid OpenAI chat both
+returned `4` after the same 9,644-token prompt, with no cached prompt tokens.
+The hybrid log records actual NPU submissions. This is a continuation smoke
+check, not a tool-calling or general quality evaluation. The image supplies
+XRT 2.21.75 and Mesa 26.0.8; `python3` was absent from PATH. Peak container
+memory across these image checks was about 1.97 GiB with no cgroup OOM events.
+
+A separate Ubuntu 24.04/XRT 2.25 prototype ran native synthetic `llama-bench`
+prefill tests, excluding warmup and initial loading, three repetitions each:
+
+| Prompt tokens | Vulkan mean | Hybrid mean | Time reduction |
+| --- | --- | --- | --- |
+| 8,192 | 5.565 s | 5.195 s | 6.6% |
+| 32,768 | 35.511 s | 33.982 s | 4.3% |
+| 65,536 | 110.993 s | 106.846 s | 3.7% |
+
+These gains are provisional: other host stacks remained running and image
+pulls/readiness checks overlapped the long comparison. They do not establish
+performance for the released userspace or larger models. GPU attention still
+dominates long prompts. Cold copies, quality and failure recovery need further
+checks before production adoption.
+
+The [prototype record](evidence/hx370-prototype.json) contains benchmark samples,
+model checksum, NPU traces and memory counters. The [image record](evidence/hx370-image.json)
+contains exact image identities, hardware checks, request results and cleanup.
+Both temporary probes were removed without removing volumes. Original Lemonade
+remains stopped. No production stack, alias or model default was changed.
 
 ## Maintenance
 

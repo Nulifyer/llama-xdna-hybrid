@@ -1,0 +1,125 @@
+{
+  "image": "ghcr.io/nulifyer/llama-xdna-hybrid:sha-aad0b9894a49",
+  "image_id": "sha256:2407c61811bc7ba6019c9439e2bc66a8b6b0639a09c7acbf621a01d7bf7a2351",
+  "repo_digests": [
+    "ghcr.io/nulifyer/llama-xdna-hybrid@sha256:a9372a69d85f51074121b5a3fdd2a0c521b04a6e14d390576ea61173becb88c8"
+  ],
+  "source_revision": "aad0b9894a492520d12cd60157762a396e7f3a9c",
+  "ci_run": "https://github.com/Nulifyer/llama-xdna-hybrid/actions/runs/37544790855",
+  "list_devices": {
+    "exit_code": 0,
+    "running": false,
+    "output": "Available devices:\n  Vulkan0: AMD Radeon 890M Graphics (RADV STRIX1) (90112 MiB, 84852 MiB free)\n  XDNA0: AMD XDNA2 NPU (prompt work, next to the Vulkan GPU) (0 MiB, 0 MiB free)\n"
+  },
+  "release_image": "ghcr.io/nulifyer/llama-xdna-hybrid:linux-v0.1.0",
+  "release_image_id": "sha256:abd437768f34e1f154e6eefedd894b3c388f3f6e9eddf387c20df01b0842a407",
+  "release_repo_digests": [
+    "ghcr.io/nulifyer/llama-xdna-hybrid@sha256:81692f3ddbb714423333390a84f4a6321bcb1af656520ce93ea25f768b14bdd8"
+  ],
+  "release_runtime_matches_tested_image": false,
+  "release_url": "https://github.com/Nulifyer/llama-xdna-hybrid/releases/tag/linux-v0.1.0",
+  "release_ci_run": "https://github.com/Nulifyer/llama-xdna-hybrid/actions/runs/37545668739",
+  "archive_sha256": "6e59046d99889802b899dd4fc3472febfe9a36effce8e2fd5ea4799fe05e6616",
+  "archive_verified": true,
+  "release_list_devices": {
+    "exit_code": 0,
+    "running": false,
+    "output": "Available devices:\n  Vulkan0: AMD Radeon 890M Graphics (RADV STRIX1) (90112 MiB, 84986 MiB free)\n  XDNA0: AMD XDNA2 NPU (prompt work, next to the Vulkan GPU) (0 MiB, 0 MiB free)\n"
+  },
+  "release_revision": "aad0b9894a492520d12cd60157762a396e7f3a9c",
+  "hardware_tests": {
+    "exit_code": 0,
+    "running": false,
+    "output": "load_backend: loaded RPC backend from /opt/llama/libggml-rpc.so\nggml_vulkan: Found 1 Vulkan devices:\nggml_vulkan: 0 = AMD Radeon 890M Graphics (RADV STRIX1) (radv) | uma: 1 | fp16: 1 | bf16: 0 | fp4: 0 | warp size: 64 | shared memory: 65536 | int dot: 1 | matrix cores: KHR_coopmat\nload_backend: loaded Vulkan backend from /opt/llama/libggml-vulkan.so\nload_backend: loaded CPU backend from /opt/llama/libggml-cpu-zen4.so\nload_backend: loaded XDNA backend from /opt/llama/libggml-xdna.so\nxdna: NPU \"NPU Strix\", /opt/llama/bfp16_gemm.xclbin, test multiply right (235 ms)\nPASS device registers as an integrated GPU (llama.cpp ranks accelerators below every GPU)\nPASS its buffer type is Vulkan's (ops change hands with no copies)\nPASS it can read Vulkan's buffers\nPASS it can read host buffers (so its pieces never need copied inputs, which skip waiting for Vulkan)\nPASS reports no free memory, so llama.cpp gives it no layers\nPASS batch 1 (reply generation) is not claimed\nPASS batch 512 (llama.cpp's default chunk) is not claimed\nPASS batch 1023 is not claimed (below the default threshold of 1024)\nPASS batch 1024, q4_K 2048x2048 is claimed\nPASS batch 2048, q4_0 is claimed\nPASS a tiny matmul is not claimed even at a large batch\nPASS a matmul whose left side is a view (a cache read, not a weight) is not claimed\nPASS a matmul whose left side is computed (not a weight) is not claimed\nPASS other ops (ADD) are not claimed\nPASS an ADD of two claimed matmuls is claimed (block claiming)\nPASS an ADD of a claimed matmul and the token embeddings (GET_ROWS) is not claimed\nPASS ... in either order\nPASS an ADD of a claimed matmul and a graph input is not claimed\nPASS the expert step (MUL_MAT_ID) is not claimed\nPASS ... and an ordinary matmul is still claimed afterwards (we warn, we don't give up the model)\nPASS offload_op never claims an op (no per-op weight copies)\nALL PASS\nload_backend: loaded RPC backend from /opt/llama/libggml-rpc.so\nggml_vulkan: Found 1 Vulkan devices:\nggml_vulkan: 0 = AMD Radeon 890M Graphics (RADV STRIX1) (radv) | uma: 1 | fp16: 1 | bf16: 0 | fp4: 0 | warp size: 64 | shared memory: 65536 | int dot: 1 | matrix cores: KHR_coopmat\nload_backend: loaded Vulkan backend from /opt/llama/libggml-vulkan.so\nload_backend: loaded CPU backend from /opt/llama/libggml-cpu-zen4.so\nload_backend: loaded XDNA backend from /opt/llama/libggml-xdna.so\nxdna: NPU \"NPU Strix\", /opt/llama/bfp16_gemm.xclbin, test multiply right (91 ms)\ncase                   XDNA vs fp64 ref             CPU vs fp64 ref             \nPASS f32   256x128 x 64     nrmse 2.91e-07 cos 1.000000   nrmse 9.20e-08 cos 1.000000\nPASS f16   256x128 x 64     nrmse 2.90e-07 cos 1.000000   nrmse 2.07e-04 cos 1.000000\nPASS q8_0  512x256 x 64     nrmse 4.06e-07 cos 1.000000   nrmse 5.47e-03 cos 0.999985\nPASS q4_0  512x256 x 64     nrmse 3.82e-07 cos 1.000000   nrmse 5.34e-03 cos 0.999986\nPASS q4_K  512x256 x 64     nrmse 4.09e-07 cos 1.000000   nrmse 6.99e-03 cos 0.999976\nPASS q4_K 2048x512 x 512    nrmse 8.12e-07 cos 1.000000   nrmse 6.97e-03 cos 0.999976\nPASS q6_K  512x256 x 64     nrmse 4.07e-07 cos 1.000000   nrmse 7.05e-03 cos 0.999975\nPASS q4_0 2048x1024 x 512 w nrmse 8.69e-03 cos 0.999962   nrmse 5.35e-03 cos 0.999986\nPASS q4_K 2048x1024 x 600 w nrmse 8.94e-03 cos 0.999960   nrmse 6.97e-03 cos 0.999976\nPASS q4_0 1536x896 x 512 w  nrmse 8.70e-03 cos 0.999962   nrmse 5.35e-03 cos 0.999986\nPASS q8_0 1536x256 x 512 w  nrmse 8.93e-03 cos 0.999960   nrmse 5.35e-03 cos 0.999986\nPASS q4_K 1536x8960 x 520 w nrmse 8.95e-03 cos 0.999960   nrmse 7.00e-03 cos 0.999976\nALL PASS\nload_backend: loaded RPC backend from /opt/llama/libggml-rpc.so\nggml_vulkan: Found 1 Vulkan devices:\nggml_vulkan: 0 = AMD Radeon 890M Graphics (RADV STRIX1) (radv) | uma: 1 | fp16: 1 | bf16: 0 | fp4: 0 | warp size: 64 | shared memory: 65536 | int dot: 1 | matrix cores: KHR_coopmat\nload_backend: loaded Vulkan backend from /opt/llama/libggml-vulkan.so\nload_backend: loaded CPU backend from /opt/llama/libggml-cpu-zen4.so\nload_backend: loaded XDNA backend from /opt/llama/libggml-xdna.so\nxdna: NPU \"NPU Strix\", /opt/llama/bfp16_gemm.xclbin, test multiply right (86 ms)\nxdna: the NPU failed (the NPU's results held NaN or infinity (a damaged weight copy)); finishing this step on the CPU and handing everything to the GPU from now on\ncase                   XDNA vs fp64 ref             CPU vs fp64 ref             \nPASS f32   256x128 x 64     nrmse 2.91e-07 cos 1.000000   nrmse 9.20e-08 cos 1.000000\nPASS f16   256x128 x 64     nrmse 2.90e-07 cos 1.000000   nrmse 2.07e-04 cos 1.000000\nPASS q8_0  512x256 x 64     nrmse 4.06e-07 cos 1.000000   nrmse 5.47e-03 cos 0.999985\nPASS q4_0  512x256 x 64     nrmse 3.82e-07 cos 1.000000   nrmse 5.34e-03 cos 0.999986\nPASS q4_K  512x256 x 64     nrmse 4.09e-07 cos 1.000000   nrmse 6.99e-03 cos 0.999976\nPASS q4_K 2048x512 x 512    nrmse 8.12e-07 cos 1.000000   nrmse 6.97e-03 cos 0.999976\nPASS q6_K  512x256 x 64     nrmse 4.07e-07 cos 1.000000   nrmse 7.05e-03 cos 0.999975\nPASS q4_0 2048x1024 x 512 w nrmse 7.64e-07 cos 1.000000   nrmse 5.35e-03 cos 0.999986\nPASS q4_K 2048x1024 x 600 w nrmse 8.12e-07 cos 1.000000   nrmse 6.97e-03 cos 0.999976\nPASS q4_0 1536x896 x 512 w  nrmse 6.62e-07 cos 1.000000   nrmse 5.35e-03 cos 0.999986\nPASS q8_0 1536x256 x 512 w  nrmse 7.03e-07 cos 1.000000   nrmse 5.35e-03 cos 0.999986\nPASS q4_K 1536x8960 x 520 w nrmse 7.04e-07 cos 1.000000   nrmse 7.00e-03 cos 0.999976\nALL PASS\nload_backend: loaded RPC backend from /opt/llama/libggml-rpc.so\nggml_vulkan: Found 1 Vulkan devices:\nggml_vulkan: 0 = AMD Radeon 890M Graphics (RADV STRIX1) (radv) | uma: 1 | fp16: 1 | bf16: 0 | fp4: 0 | warp size: 64 | shared memory: 65536 | int dot: 1 | matrix cores: KHR_coopmat\nload_backend: loaded Vulkan backend from /opt/llama/libggml-vulkan.so\nload_backend: loaded CPU backend from /opt/llama/libggml-cpu-zen4.so\nload_backend: loaded XDNA backend from /opt/llama/libggml-xdna.so\nxdna: NPU \"NPU Strix\", /opt/llama/bfp16_gemm.xclbin, test multiply right (97 ms)\nxdna: NPU weight copies limited to 0.1 GB (set by GGML_XDNA_MAX_COPY_GB): the first 2 layers on the NPU, the rest on the GPU\nPASS with no context started, the limit doesn't apply (llama.cpp's load-time checks)\nPASS a weight with no data is claimed, and doesn't count against the limit\nPASS layers 0 and 1 fit (36 MiB of 51.2) and are claimed\nPASS layer 2's first three weights fit when asked\nPASS layer 2's fourth weight would pass the limit: not claimed\nPASS layer 2's first three then stay on the GPU too (no layer is split)\nPASS a weight that would still fit is not claimed once the limit is reached\nPASS what was taken stays taken\nPASS after the context is freed, the next one starts with nothing counted\nALL PASS\n"
+  },
+  "api_smoke": {
+    "gpu": {
+      "response": {
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "4"
+            }
+          }
+        ],
+        "created": 1791329318,
+        "model": "hybrid-test",
+        "system_fingerprint": "b10944-b6b003d2c",
+        "object": "chat.completion",
+        "usage": {
+          "completion_tokens": 2,
+          "prompt_tokens": 9644,
+          "total_tokens": 9646,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "id": "chatcmpl-tLrgj1Ubeuwz3N045o10d4TdptBLXxK5",
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 9644,
+          "prompt_ms": 8192.849,
+          "prompt_per_token_ms": 0.8495281003732891,
+          "prompt_per_second": 1177.1240993212496,
+          "predicted_n": 2,
+          "predicted_ms": 76.541,
+          "predicted_per_token_ms": 76.541,
+          "predicted_per_second": 13.064893325146
+        }
+      },
+      "log": "0.00.147.810 W DEPRECATED: argument '--port' specified multiple times, use comma-separated values instead (only last value will be used)\n0.00.147.812 W DEPRECATED: argument '--host' specified multiple times, use comma-separated values instead (only last value will be used)\n0.00.147.872 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)\n0.00.148.125 W srv  llama_server: -----------------\n0.00.148.127 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set\n0.00.148.127 W srv  llama_server: this can be a security risk (cross-origin attacks)\n0.00.148.127 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655\n0.00.148.127 W srv  llama_server: -----------------\n0.00.149.295 I srv    load_model: loading model '/opt/lemonade/.cache/huggingface/hub/models--unsloth--Qwen3.5-2B-GGUF/snapshots/f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-Q4_K_M.gguf'\n0.00.968.707 I cmn          init: llama threadpool init, n_threads = 12\n0.01.244.238 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 16384, kv_unified = 'false'\n0.01.247.411 I srv  llama_server: model loaded\n0.01.247.420 I srv  llama_server: listening on http://127.0.0.1:18081\n0.01.519.860 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1\n0.01.519.963 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0\n0.04.741.260 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   6157, progress = 0.64, t =   3.22 s / 1911.37 tokens per second\n0.06.368.566 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   7596, progress = 0.79, t =   4.85 s / 1566.65 tokens per second\n0.07.716.968 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   9640, progress = 1.00, t =   6.20 s / 1555.61 tokens per second\n0.09.789.391 I slot print_timing: id  0 | task 0 | prompt eval time =    8192.85 ms /  9644 tokens (    0.85 ms per token,  1177.12 tokens per second)\n0.09.789.395 I slot print_timing: id  0 | task 0 |        eval time =      76.54 ms /     2 tokens (   76.54 ms per token,    13.06 tokens per second)\n0.09.789.396 I slot print_timing: id  0 | task 0 |       total time =    8269.39 ms /  9646 tokens\n0.09.789.401 I slot print_timing: id  0 | task 0 |    graphs reused =          1\n0.09.789.549 I slot      release: id  0 | task 0 | stop processing: n_tokens = 9645, truncated = 0\n"
+    },
+    "hybrid": {
+      "response": {
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "4"
+            }
+          }
+        ],
+        "created": 1791329329,
+        "model": "hybrid-test",
+        "system_fingerprint": "b10944-b6b003d2c",
+        "object": "chat.completion",
+        "usage": {
+          "completion_tokens": 2,
+          "prompt_tokens": 9644,
+          "total_tokens": 9646,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "id": "chatcmpl-5TxVsNMaQharHQ44A66abvaiaoORuDGv",
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 9644,
+          "prompt_ms": 7918.527,
+          "prompt_per_token_ms": 0.8210832642057238,
+          "prompt_per_second": 1217.9032792336252,
+          "predicted_n": 2,
+          "predicted_ms": 25.136,
+          "predicted_per_token_ms": 25.136,
+          "predicted_per_second": 39.78357733927435
+        }
+      },
+      "log": "Available devices:\n  Vulkan0: AMD Radeon 890M Graphics (RADV STRIX1) (90112 MiB, 89954 MiB free)\n  XDNA0: AMD XDNA2 NPU (prompt work, next to the Vulkan GPU) (0 MiB, 0 MiB free)\n0.00.159.079 W DEPRECATED: argument '--port' specified multiple times, use comma-separated values instead (only last value will be used)\n0.00.159.083 W DEPRECATED: argument '--host' specified multiple times, use comma-separated values instead (only last value will be used)\n0.00.159.168 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)\n0.00.159.475 W srv  llama_server: -----------------\n0.00.159.477 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set\n0.00.159.477 W srv  llama_server: this can be a security risk (cross-origin attacks)\n0.00.159.477 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655\n0.00.159.477 W srv  llama_server: -----------------\n0.00.160.678 I srv    load_model: loading model '/opt/lemonade/.cache/huggingface/hub/models--unsloth--Qwen3.5-2B-GGUF/snapshots/f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-Q4_K_M.gguf'\n0.00.554.525 W common_fit_params: failed to fit params to free device memory: n_gpu_layers already set by user to 99, abort\n0.01.029.650 I cmn          init: llama threadpool init, n_threads = 12\n0.01.090.715 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 16384, kv_unified = 'false'\n0.01.093.642 I srv  llama_server: model loaded\n0.01.093.648 I srv  llama_server: listening on http://127.0.0.1:18081\n0.02.300.569 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1\n0.02.300.634 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0\nxdna times, 196 matmuls in 89 pieces: all 940.6 ms | read inputs 67.6, encode 3.3, NPU 244.3 (330 calls), decode 0.0, write results 127.5, weight copies 2316.6 ms\nxdna host passes: 463.3 ms in 492\nxdna weight copies: 126 built at load, 0 inside pieces; 1309.7 ms waiting for those built at load\nxdna trace: 100 pieces, 221 matmul results, 0 with no recorded reader\n0.06.090.075 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   4109, progress = 0.43, t =   3.79 s / 1084.34 tokens per second\nxdna times, 198 matmuls in 88 pieces: all 945.3 ms | read inputs 72.4, encode 3.0, NPU 257.6 (332 calls), decode 0.0, write results 126.5, weight copies 0.0 ms\nxdna host passes: 481.8 ms in 494\nxdna weight copies: 0 built at load, 0 inside pieces; 0.0 ms waiting for those built at load\nxdna trace: 200 pieces, 446 matmul results, 0 with no recorded reader\n0.07.446.638 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   6157, progress = 0.64, t =   5.15 s / 1196.47 tokens per second\nxdna times, 200 matmuls in 89 pieces: all 792.4 ms | read inputs 59.9, encode 26.2, NPU 226.7 (336 calls), decode 0.0, write results 101.7, weight copies 0.0 ms\nxdna host passes: 373.8 ms in 498\nxdna weight copies: 0 built at load, 0 inside pieces; 0.0 ms waiting for those built at load\n0.08.438.077 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   7596, progress = 0.79, t =   6.14 s / 1237.66 tokens per second\nxdna trace: 300 pieces, 669 matmul results, 0 with no recorded reader\n0.10.097.033 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   9640, progress = 1.00, t =   7.80 s / 1236.47 tokens per second\n0.10.244.340 I slot print_timing: id  0 | task 0 | prompt eval time =    7918.53 ms /  9644 tokens (    0.82 ms per token,  1217.90 tokens per second)\n0.10.244.346 I slot print_timing: id  0 | task 0 |        eval time =      25.14 ms /     2 tokens (   25.14 ms per token,    39.78 tokens per second)\n0.10.244.347 I slot print_timing: id  0 | task 0 |       total time =    7943.66 ms /  9646 tokens\n0.10.244.352 I slot print_timing: id  0 | task 0 |    graphs reused =          1\n0.10.244.519 I slot      release: id  0 | task 0 | stop processing: n_tokens = 9645, truncated = 0\n"
+    }
+  },
+  "runtime_identity": {
+    "exit_code": 0,
+    "running": false,
+    "output": "PRETTY_NAME=\"Ubuntu 26.04.1 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"26.04\"\nVERSION=\"26.04.1 LTS (Resolute Raccoon)\"\nVERSION_CODENAME=resolute\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=resolute\nLOGO=ubuntu-logo\nlibxrt-npu2\t1:2.21.75+dfsg-4\nlibxrt2\t1:2.21.75+dfsg-4\nmesa-vulkan-drivers:amd64\t26.0.8-1ubuntu0.3\n9ae8b299f1f319eed1db95c8ba46f0e00c666ae9d3163c713cb4543a43048495  /opt/llama/libggml-xdna.so\n365d62e6ba52c26d3dd55d27129f0c122d42fee655c2467472522d3dbadd9fe7  /opt/llama/bfp16_gemm.xclbin\n2115567616\nlow 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n"
+  },
+  "cleanup": {
+    "container_removed": true,
+    "volumes_removed": false,
+    "production_changed": false
+  }
+}

@@ -1,22 +1,26 @@
 # Linux port status
 
-Current action: build and run the port in an isolated container on the HX 370
-Docker host, then complete the GitHub build and container release.
+Current batch complete: Linux port, pinned native runtime, CI, experimental
+GitHub release and GHCR image published and checked on HX 370.
+Source release is `linux-v0.1.0` at `aad0b9894a492520d12cd60157762a396e7f3a9c`.
+See [Linux setup and evidence](../docs/Linux.md).
 
-Verified locally: full XRT-enabled compilation using XRT 2.25 runtime libraries
-and vendored 2.20 headers; all seven host/nodriver CTest cases passed.
-This workstation has no AMD NPU. These checks do not establish NPU execution.
+Verified: Linux CI eight host/nodriver tests, Windows CI, release archive
+checksum, exact release image NPU self-test, dispatch, matmul, injected-NaN
+fallback and copy-budget tests. GPU and hybrid chat produced matching output
+after a 9,644-token prompt. Synthetic prototype benchmarks covered 8K/32K/64K.
+Keep prototype userspace timings separate from released-image checks.
 
-Hardware probe: `homelab-hybrid-port-probe-20261006`, isolated from production,
-with read-only model/runtime caches. Original Lemonade remains stopped.
-The probe is temporary and must be removed after testing.
+Both own hardware probes were removed, with no volume removal. Original
+Lemonade remains stopped. No production stack or model settings were changed.
 
-Design: NPU takes eligible bulk-prefill work through GGML's scheduler. Vulkan
-retains attention and persistent state, avoiding cross-runtime KV import.
-Linux Docker builder/runtime use Ubuntu 26.04 and packaged XRT 2.21.75.
-Hosted CI can test only compilation and host reference. Release tags `linux-v*`
-remain experimental until the recorded hardware gates pass.
+Next action: evaluate a narrow Lemonade native recipe for this common-GGML
+runtime. The Homelab repository owns that source review and integration plan.
+No Lemonade fork or integration test exists yet. Ordinary system llama wiring
+alone does not reserve the NPU against concurrent FLM loads.
 
-Known limitation: upstream mid-request NPU failure can use slow CPU fallback.
-See [Linux setup](../docs/Linux.md). The launcher requires NPU readiness at
-startup; that does not establish failure recovery during a request.
+Known limits: upstream mid-request NPU failure can use slow CPU fallback.
+Larger-model quality, tools, cold-start latency and recovery remain unverified.
+The recipe must own both GPU and NPU and reject or evict conflicting NPU loads.
+FLM-to-llama state conversion is a separate engine problem; this runtime does
+not use FLM weights or export FLM state. No Python production serving.
