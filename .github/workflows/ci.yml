@@ -32,6 +32,7 @@ jobs:
           install_runtime_only: true
           install_lavapipe: true
           cache: true
+          github_token: ${{ github.token }}
 
       - name: Put the Vulkan loader on PATH
         shell: pwsh

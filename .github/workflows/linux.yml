@@ -21,6 +21,7 @@ jobs:
         with:
           context: .
           target: artifacts
+          build-args: SOURCE_REVISION=${{ github.sha }}
           outputs: type=local,dest=release
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -50,6 +51,7 @@ jobs:
         with:
           context: .
           target: runtime
+          build-args: SOURCE_REVISION=${{ github.sha }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.tags.outputs.tags }}
           cache-from: type=gha

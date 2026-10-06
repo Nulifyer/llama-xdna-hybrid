@@ -1,8 +1,9 @@
 FROM ubuntu:26.04 AS build
 ARG DEBIAN_FRONTEND=noninteractive
 ARG XRT_VERSION=1:2.21.75+dfsg-4
+ARG SOURCE_REVISION=unknown
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl git cmake g++ uuid-dev libxrt-dev=${XRT_VERSION} \
+    ca-certificates curl git cmake make g++ uuid-dev libxrt-dev=${XRT_VERSION} \
     libvulkan1 mesa-vulkan-drivers libssl3t64 libbrotli1 libzstd1 zlib1g \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
@@ -20,6 +21,10 @@ COPY --from=build /out/ /
 FROM ubuntu:26.04 AS runtime
 ARG DEBIAN_FRONTEND=noninteractive
 ARG XRT_VERSION=1:2.21.75+dfsg-4
+ARG SOURCE_REVISION=unknown
+LABEL org.opencontainers.image.source="https://github.com/Nulifyer/llama-xdna-hybrid" \
+    org.opencontainers.image.revision="${SOURCE_REVISION}" \
+    org.opencontainers.image.description="Experimental Linux XDNA2 prefill and Vulkan decoding"
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl libxrt2=${XRT_VERSION} libxrt-npu2=${XRT_VERSION} \
     libvulkan1 mesa-vulkan-drivers libssl3t64 libbrotli1 libzstd1 zlib1g libgomp1 \
