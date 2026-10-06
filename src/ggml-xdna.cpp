@@ -48,9 +48,7 @@
 #include <unordered_set>
 #include <vector>
 
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <windows.h>
+#include "xdna-platform.h"
 
 #define XDNA_DESCRIPTION "AMD XDNA2 NPU (prompt work, next to the Vulkan GPU)"
 
@@ -490,11 +488,9 @@ static bool xdna_budget_takes(const ggml_tensor * w) {
     if (b.out.count(key)) return false;
     if (!b.started) {
         b.started = true;
-        MEMORYSTATUSEX m = {};
-        m.dwLength = sizeof(m);
-        GlobalMemoryStatusEx(&m);
-        b.free = (double) m.ullAvailPhys;
-        b.kept_back = std::max(4 * GB, (double) m.ullTotalPhys / 10);
+        const auto m = xdna_system_memory();
+        b.free = (double) m.available;
+        b.kept_back = std::max(4 * GB, (double) m.total / 10);
         const char * s = xdna_env("GGML_XDNA_MAX_COPY_GB");
         b.overridden = s != nullptr;
         b.capped = !s && b.free - b.kept_back > xdna_budget::DEFAULT_MAX;

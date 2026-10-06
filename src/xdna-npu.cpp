@@ -15,10 +15,14 @@
 #include <filesystem>
 #include <tuple>
 
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
 #include <delayimp.h>
+#else
+#include <dlfcn.h>
+#endif
 
 namespace {
 
@@ -110,6 +114,7 @@ bool injected_nan() {
 
 // The directory this DLL was loaded from.
 static std::filesystem::path module_dir() {
+#ifdef _WIN32
     HMODULE h = nullptr;
     if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
                             (LPCWSTR) &module_dir, &h))
@@ -118,6 +123,11 @@ static std::filesystem::path module_dir() {
     const DWORD n = GetModuleFileNameW(h, buf, MAX_PATH);
     if (n == 0 || n == MAX_PATH) return {};
     return std::filesystem::path(std::wstring(buf, n)).parent_path();
+#else
+    Dl_info info = {};
+    if (!dladdr(reinterpret_cast<const void *>(&module_dir), &info) || !info.dli_fname) return {};
+    return std::filesystem::path(info.dli_fname).parent_path();
+#endif
 }
 
 const std::string & xdna_xclbin() {
@@ -194,6 +204,7 @@ static std::string npu_self_test(const std::string & name) {
 // machine without the driver. Before the first call into it, bind every
 // function the backend uses: a missing DLL or function then fails here, with
 // a reason, instead of at a call. 0 when all bind.
+#ifdef _WIN32
 static DWORD xrt_bind_failure() {
     __try {
         return SUCCEEDED(__HrLoadAllImportsForDll("xrt_coreutil.dll")) ? 0 : (DWORD) ERROR_MOD_NOT_FOUND;
@@ -206,15 +217,18 @@ static DWORD xrt_bind_failure() {
     }
 }
 
+#endif
+
 bool xdna_npu_usable(std::string & why) {
     static std::string reason;
     static const bool ok = [] {
         if (xdna_xclbin().empty()) {
             const char * s = xdna_env("GGML_XDNA_KERNELS");
             reason = s && *s ? std::string("GGML_XDNA_KERNELS=") + s + " names no xclbin"
-                             : "no bfp16_gemm.xclbin next to ggml-xdna.dll";
+                             : "no bfp16_gemm.xclbin next to the XDNA backend";
             return false;
         }
+#ifdef _WIN32
         switch (xrt_bind_failure()) {
             case 0: break;
             case ERROR_PROC_NOT_FOUND:
@@ -224,6 +238,7 @@ bool xdna_npu_usable(std::string & why) {
                 reason = "no NPU driver (xrt_coreutil.dll not found)";
                 return false;
         }
+#endif
         xrtsh_dev dev = xrtsh_device_open(0);
         if (!dev) {
             reason = std::string("no NPU found (") + xrtsh_last_error() + ")";

@@ -15,9 +15,15 @@ set(GGML_IMPLIB_DIR "${CMAKE_SOURCE_DIR}/third_party" CACHE PATH "generated ggml
 # reference only, like GGML_XDNA_HOST_ONLY=1.
 option(GGML_XDNA_NPU "build the NPU path" ON)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    include(cmake/Linux.cmake)
+    return()
+endif()
+
 add_library(ggml-xdna SHARED
     src/ggml-xdna.cpp
     src/xdna-ref.cpp
+    src/xdna-platform.cpp
     include/ggml-xdna.h
 )
 

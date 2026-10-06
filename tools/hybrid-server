@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+export LD_LIBRARY_PATH="$root${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export GGML_BACKEND_PATH="$root/libggml-xdna.so"
+case ${1:-} in
+    --help|-h|--version|--list-devices) exec "$root/llama-server" "$@" ;;
+esac
+case ${HYBRID_REQUIRE_NPU:-1} in
+    0|1) ;;
+    *) echo 'HYBRID_REQUIRE_NPU must be 0 or 1.' >&2; exit 1 ;;
+esac
+# Host-reference mode exists for CI, but must never satisfy the production gate.
+if [[ ${HYBRID_REQUIRE_NPU:-1} == 1 ]]; then
+    if [[ -n ${GGML_XDNA_HOST_ONLY:-} && ${GGML_XDNA_HOST_ONLY} != 0 ]]; then
+        echo 'Hybrid serving refuses GGML_XDNA_HOST_ONLY. Unset it to use the NPU.' >&2
+        exit 1
+    fi
+    devices=$("$root/llama-server" --list-devices 2>&1) || { printf '%s\n' "$devices" >&2; exit 1; }
+    printf '%s\n' "$devices" >&2
+    if ! grep -qE '^[[:space:]]+XDNA0:' <<< "$devices" || \
+       ! grep -qE '^[[:space:]]+Vulkan0:' <<< "$devices"; then
+        echo 'NPU self-test or Vulkan device check failed. Hybrid serving was not started.' >&2
+        exit 1
+    fi
+    exec "$root/llama-server" --device XDNA0,Vulkan0 --tensor-split 0,1 \
+        --n-gpu-layers 99 --batch-size 2048 --ubatch-size 2048 \
+        --host 0.0.0.0 --port 8080 "$@"
+fi
+exec "$root/llama-server" --device Vulkan0 --n-gpu-layers 99 \
+    --batch-size 2048 --ubatch-size 2048 --host 0.0.0.0 --port 8080 "$@"

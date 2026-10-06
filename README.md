@@ -1,3 +1,17 @@
+# llama-xdna-hybrid
+
+This fork adds Linux builds and containers to
+[Cyronius/ggml-xdna](https://github.com/Cyronius/ggml-xdna). It uses unmodified,
+pinned llama.cpp b10944 with a compiled XDNA backend. Eligible prefill
+operations run on the NPU; attention, the KV cache and decoding stay on Vulkan.
+
+Linux support is experimental. See [Linux setup and validation](docs/Linux.md)
+and [current verification state](.agents/STATUS.md). A successful build is not
+a hardware performance result. Linux releases use `linux-v*` tags; the upstream
+Windows instructions below remain available.
+
+---
+
 # ggml-xdna: llama.cpp prompt reading on the AMD Ryzen AI NPU
 
 ggml-xdna is an add-on for llama.cpp that reads prompts on the NPU of an
