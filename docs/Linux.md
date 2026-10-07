@@ -50,7 +50,7 @@ GHCR registry ID 4. Its helper can pull without exporting registry credentials:
 
 ```bash
 PORTAINER_TIMEOUT=0 ./portainer.sh pull --registry 4 \
-  ghcr.io/nulifyer/llama-xdna-hybrid:linux-v0.1.0
+  ghcr.io/nulifyer/llama-xdna-hybrid:linux-v0.2.0
 ```
 
 That command runs from the separate Homelab repository. Image publishing uses
@@ -119,7 +119,53 @@ process-wide counters, not power measurements or per-device total memory.
 `hybrid-manifest.json` declares the operator coverage. Attention and recurrent
 kernels remain on GPU; this release does not implement full NPU prefill.
 
-## HX 370 verification
+## HX 370 native v0.2 verification
+
+[linux-v0.2.0](https://github.com/Nulifyer/llama-xdna-hybrid/releases/tag/linux-v0.2.0)
+is built from `5f6ff4c49bdd9fa8320f1f35de53d077df9f275f`. Linux main/release
+and Windows CI passed; Linux ran nine host/nodriver checks. The downloaded
+release archive passed checksum verification. The released image digest is
+`sha256:982a586fdd49bfd181b8e4613ded8d8e857969bf650ecb44ee74c1120000118d`.
+
+That exact image passed HX 370 self-test, phase dispatch, quantized matmul,
+legacy NaN fallback and small-budget tests. Strict native serving returned HTTP
+500 for an injected NPU error, disabled NPU placement, then correctly recomputed
+an uncached 9,641-token request on GPU. Real driver-hang recovery is untested.
+
+Homelab deployed this digest as Portainer stack 73, `ai-hybrid`, on endpoint 7.
+HTTPS authentication, cached continuation, queued concurrent clients, automatic
+tool calling and stream cancellation followed by a fresh request passed.
+The service uses Qwen3.5-2B Q4_K_M, alias `small-task`, 32K context and one slot.
+Authenticated counters recorded actual NPU work with zero failures. This is
+interface/state smoke coverage, not a broad model-quality evaluation.
+
+Native synthetic prefill on the main source image used three measured repetitions
+per case, excluding warmup, loading and initial weight packing:
+
+| Prompt tokens | Vulkan mean | Hybrid mean | Time reduction |
+| --- | --- | --- | --- |
+| 8,192 | 6.252 s | 5.010 s | 19.9% |
+| 32,768 | 35.742 s | 32.360 s | 9.5% |
+| 65,536 | 97.704 s | 97.383 s | 0.3% |
+
+The main and release image digests differ. Their measured llama, XDNA and Vulkan
+library hashes and kernel hash match; other binaries were not compared. Both
+modes used the same model/source, batch settings and cache clearing. Other host
+stacks remained active, and modes ran sequentially rather than in balanced order.
+Image pulls did not overlap these measurements. The 64K difference is smaller
+than run variation, so it establishes no useful gain. Cold weight packing can
+remove the benefit; these figures do not predict all request latency.
+
+The combined main-image probe peaked at 2.27 GiB cgroup memory with no OOM and
+one 0.327-second CPU quota throttle event. Driver allocations are not fully
+attributed by cgroup accounting. Power was not measured. The runtime contains
+no Python serving process. Temporary probes were removed; model volumes remain.
+
+[Native v0.2 evidence](evidence/hx370-native-v0.2.json) records samples, exact
+identities, test output, resource scope and production checks. Full NPU attention
+and recurrence plus Lemonade manager integration remain future work.
+
+## Historical HX 370 v0.1 verification
 
 The experimental [linux-v0.1.0 release](https://github.com/Nulifyer/llama-xdna-hybrid/releases/tag/linux-v0.1.0)
 was built by Linux CI, with all eight host/nodriver checks passing. Windows CI

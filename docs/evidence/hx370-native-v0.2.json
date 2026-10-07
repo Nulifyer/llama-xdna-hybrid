@@ -1,0 +1,956 @@
+{
+  "recorded_at_utc": "2026-10-07",
+  "source_revision": "5f6ff4c49bdd9fa8320f1f35de53d077df9f275f",
+  "release": "linux-v0.2.0",
+  "release_url": "https://github.com/Nulifyer/llama-xdna-hybrid/releases/tag/linux-v0.2.0",
+  "release_image": {
+    "Id": "sha256:cc46adc75fe1356ab20ddf15f5e95e4eb1f63b53dca2ba7dd618631c6fe948f8",
+    "RepoDigests": [
+      "ghcr.io/nulifyer/llama-xdna-hybrid@sha256:982a586fdd49bfd181b8e4613ded8d8e857969bf650ecb44ee74c1120000118d"
+    ],
+    "revision": "5f6ff4c49bdd9fa8320f1f35de53d077df9f275f"
+  },
+  "benchmark_image": {
+    "source_revision": "5f6ff4c49bdd9fa8320f1f35de53d077df9f275f",
+    "digest": "sha256:fc6cd4ca6edd668482dc810f0f9e7b6dbc0019b7b9d80b20988a43609cb4f221",
+    "image_id": "sha256:476e260c62964678ea6425ff7798cdf4b56b126c04b7693be0f3c7905861671c"
+  },
+  "archive_sha256": "73e9ba07cb5878eeb356f66b83fb103247eb3361dab68bb31a2a9b637f4b6ee7",
+  "archive_checksum_verification": "sha256sum -c SHA256SUMS passed",
+  "llama": {
+    "tag": "b10944",
+    "revision": "b6b003d2cb29647d968302eb2db8da6f66303b3e",
+    "patch_sha256": "178da289d3a63c653cd4249473e515a6e9de97c1e53382e639153828ad25244b"
+  },
+  "hardware": {
+    "host": "mage",
+    "cpu": "Ryzen AI 9 HX 370",
+    "gpu": "Radeon 890M RADV STRIX1",
+    "npu": "XDNA2 / NPU Strix",
+    "host_kernel": "7.0.0-30-generic",
+    "container_userspace": "Ubuntu 26.04, XRT 2.21.75, Mesa 26.0.8"
+  },
+  "model": {
+    "repository": "unsloth/Qwen3.5-2B-GGUF",
+    "revision": "f6d5376be1edb4d416d56da11e5397a961aca8ae",
+    "file": "Qwen3.5-2B-Q4_K_M.gguf",
+    "sha256": "aaf42c8b7c3cab2bf3d69c355048d4a0ee9973d48f16c731c0520ee914699223"
+  },
+  "ci": {
+    "linux_main": 37551633187,
+    "windows_main": 37551633157,
+    "linux_release": 37552121967,
+    "conclusion": "success",
+    "host_nodriver_checks": 9
+  },
+  "release_hardware_checks": {
+    "exit_code": 0,
+    "running": false,
+    "output": "Available devices:\n  Vulkan0: AMD Radeon 890M Graphics (RADV STRIX1) (90112 MiB, 89954 MiB free)\n  XDNA0: AMD XDNA2 NPU (prompt work, next to the Vulkan GPU) (0 MiB, 0 MiB free)\nggml_vulkan: Found 1 Vulkan devices:\nggml_vulkan: 0 = AMD Radeon 890M Graphics (RADV STRIX1) (radv) | uma: 1 | fp16: 1 | bf16: 0 | fp4: 0 | warp size: 64 | shared memory: 65536 | int dot: 1 | matrix cores: KHR_coopmat\nload_backend: loaded Vulkan backend from /opt/llama/libggml-vulkan.so\nload_backend: loaded CPU backend from /opt/llama/libggml-cpu-zen4.so\nload_backend: loaded XDNA backend from /opt/llama/libggml-xdna.so\nxdna: NPU \"NPU Strix\", /opt/llama/bfp16_gemm.xclbin, test multiply right (96 ms)\nPASS device registers as an integrated GPU (llama.cpp ranks accelerators below every GPU)\nPASS its buffer type is Vulkan's (ops change hands with no copies)\nPASS it can read Vulkan's buffers\nPASS it can read host buffers (so its pieces never need copied inputs, which skip waiting for Vulkan)\nPASS reports no free memory, so llama.cpp gives it no layers\nPASS batch 1 (reply generation) is not claimed\nPASS batch 512 (llama.cpp's default chunk) is not claimed\nPASS batch 1023 is not claimed (below the default threshold of 1024)\nPASS batch 1024, q4_K 2048x2048 is claimed\nPASS batch 2048, q4_0 is claimed\nPASS a tiny matmul is not claimed even at a large batch\nPASS a matmul whose left side is a view (a cache read, not a weight) is not claimed\nPASS a matmul whose left side is computed (not a weight) is not claimed\nPASS other ops (ADD) are not claimed\nPASS an ADD of two claimed matmuls is claimed (block claiming)\nPASS an ADD of a claimed matmul and the token embeddings (GET_ROWS) is not claimed\nPASS ... in either order\nPASS an ADD of a claimed matmul and a graph input is not claimed\nPASS the expert step (MUL_MAT_ID) is not claimed\nPASS ... and an ordinary matmul is still claimed afterwards (we warn, we don't give up the model)\nPASS offload_op never claims an op (no per-op weight copies)\nPASS versioned scheduler and metrics interface is available\nPASS explicit prefill accepts an eligible weight matmul\nPASS unchanged placement can reuse its graph\nPASS decode, mixed, verification or invalid phase invalidates prefill placement\nPASS large non-prefill batch stays on GPU\nPASS decode, mixed, verification or invalid phase invalidates prefill placement\nPASS large non-prefill batch stays on GPU\nPASS decode, mixed, verification or invalid phase invalidates prefill placement\nPASS large non-prefill batch stays on GPU\nPASS decode, mixed, verification or invalid phase invalidates prefill placement\nPASS large non-prefill batch stays on GPU\nPASS short prompt tail stays on GPU\nPASS metrics declare actual partial-prefill coverage\nPASS automatic reserve probes are counted separately from mixed request batches\nALL PASS\nggml_vulkan: Found 1 Vulkan devices:\nggml_vulkan: 0 = AMD Radeon 890M Graphics (RADV STRIX1) (radv) | uma: 1 | fp16: 1 | bf16: 0 | fp4: 0 | warp size: 64 | shared memory: 65536 | int dot: 1 | matrix cores: KHR_coopmat\nload_backend: loaded Vulkan backend from /opt/llama/libggml-vulkan.so\nload_backend: loaded CPU backend from /opt/llama/libggml-cpu-zen4.so\nload_backend: loaded XDNA backend from /opt/llama/libggml-xdna.so\nxdna: NPU \"NPU Strix\", /opt/llama/bfp16_gemm.xclbin, test multiply right (94 ms)\ncase                   XDNA vs fp64 ref             CPU vs fp64 ref             \nPASS f32   256x128 x 64     nrmse 2.91e-07 cos 1.000000   nrmse 9.20e-08 cos 1.000000\nPASS f16   256x128 x 64     nrmse 2.90e-07 cos 1.000000   nrmse 2.07e-04 cos 1.000000\nPASS q8_0  512x256 x 64     nrmse 4.06e-07 cos 1.000000   nrmse 5.47e-03 cos 0.999985\nPASS q4_0  512x256 x 64     nrmse 3.82e-07 cos 1.000000   nrmse 5.34e-03 cos 0.999986\nPASS q4_K  512x256 x 64     nrmse 4.09e-07 cos 1.000000   nrmse 6.99e-03 cos 0.999976\nPASS q4_K 2048x512 x 512    nrmse 8.12e-07 cos 1.000000   nrmse 6.97e-03 cos 0.999976\nPASS q6_K  512x256 x 64     nrmse 4.07e-07 cos 1.000000   nrmse 7.05e-03 cos 0.999975\nPASS q4_0 2048x1024 x 512 w nrmse 8.69e-03 cos 0.999962   nrmse 5.35e-03 cos 0.999986\nPASS q4_K 2048x1024 x 600 w nrmse 8.94e-03 cos 0.999960   nrmse 6.97e-03 cos 0.999976\nPASS q4_0 1536x896 x 512 w  nrmse 8.70e-03 cos 0.999962   nrmse 5.35e-03 cos 0.999986\nPASS q8_0 1536x256 x 512 w  nrmse 8.93e-03 cos 0.999960   nrmse 5.35e-03 cos 0.999986\nPASS q4_K 1536x8960 x 520 w nrmse 8.95e-03 cos 0.999960   nrmse 7.00e-03 cos 0.999976\nALL PASS\nggml_vulkan: Found 1 Vulkan devices:\nggml_vulkan: 0 = AMD Radeon 890M Graphics (RADV STRIX1) (radv) | uma: 1 | fp16: 1 | bf16: 0 | fp4: 0 | warp size: 64 | shared memory: 65536 | int dot: 1 | matrix cores: KHR_coopmat\nload_backend: loaded Vulkan backend from /opt/llama/libggml-vulkan.so\nload_backend: loaded CPU backend from /opt/llama/libggml-cpu-zen4.so\nload_backend: loaded XDNA backend from /opt/llama/libggml-xdna.so\nxdna: NPU \"NPU Strix\", /opt/llama/bfp16_gemm.xclbin, test multiply right (101 ms)\nxdna: the NPU failed (the NPU's results held NaN or infinity (a damaged weight copy)); NPU disabled for this process (fail_closed=0)\ncase                   XDNA vs fp64 ref             CPU vs fp64 ref             \nPASS f32   256x128 x 64     nrmse 2.91e-07 cos 1.000000   nrmse 9.20e-08 cos 1.000000\nPASS f16   256x128 x 64     nrmse 2.90e-07 cos 1.000000   nrmse 2.07e-04 cos 1.000000\nPASS q8_0  512x256 x 64     nrmse 4.06e-07 cos 1.000000   nrmse 5.47e-03 cos 0.999985\nPASS q4_0  512x256 x 64     nrmse 3.82e-07 cos 1.000000   nrmse 5.34e-03 cos 0.999986\nPASS q4_K  512x256 x 64     nrmse 4.09e-07 cos 1.000000   nrmse 6.99e-03 cos 0.999976\nPASS q4_K 2048x512 x 512    nrmse 8.12e-07 cos 1.000000   nrmse 6.97e-03 cos 0.999976\nPASS q6_K  512x256 x 64     nrmse 4.07e-07 cos 1.000000   nrmse 7.05e-03 cos 0.999975\nPASS q4_0 2048x1024 x 512 w nrmse 7.64e-07 cos 1.000000   nrmse 5.35e-03 cos 0.999986\nPASS q4_K 2048x1024 x 600 w nrmse 8.12e-07 cos 1.000000   nrmse 6.97e-03 cos 0.999976\nPASS q4_0 1536x896 x 512 w  nrmse 6.62e-07 cos 1.000000   nrmse 5.35e-03 cos 0.999986\nPASS q8_0 1536x256 x 512 w  nrmse 7.03e-07 cos 1.000000   nrmse 5.35e-03 cos 0.999986\nPASS q4_K 1536x8960 x 520 w nrmse 7.04e-07 cos 1.000000   nrmse 7.00e-03 cos 0.999976\nALL PASS\nggml_vulkan: Found 1 Vulkan devices:\nggml_vulkan: 0 = AMD Radeon 890M Graphics (RADV STRIX1) (radv) | uma: 1 | fp16: 1 | bf16: 0 | fp4: 0 | warp size: 64 | shared memory: 65536 | int dot: 1 | matrix cores: KHR_coopmat\nload_backend: loaded Vulkan backend from /opt/llama/libggml-vulkan.so\nload_backend: loaded CPU backend from /opt/llama/libggml-cpu-zen4.so\nload_backend: loaded XDNA backend from /opt/llama/libggml-xdna.so\nxdna: NPU \"NPU Strix\", /opt/llama/bfp16_gemm.xclbin, test multiply right (95 ms)\nxdna: NPU weight copies limited to 0.1 GB (set by GGML_XDNA_MAX_COPY_GB): the first 2 layers on the NPU, the rest on the GPU\nPASS with no context started, the limit doesn't apply (llama.cpp's load-time checks)\nPASS a weight with no data is claimed, and doesn't count against the limit\nPASS layers 0 and 1 fit (36 MiB of 51.2) and are claimed\nPASS layer 2's first three weights fit when asked\nPASS layer 2's fourth weight would pass the limit: not claimed\nPASS layer 2's first three then stay on the GPU too (no layer is split)\nPASS a weight that would still fit is not claimed once the limit is reached\nPASS what was taken stays taken\nPASS after the context is freed, the next one starts with nothing counted\nALL PASS\n"
+  },
+  "release_strict_nan_error_and_gpu_recovery": {
+    "failed_request": {
+      "error": {
+        "code": 500,
+        "message": "Compute error.",
+        "type": "server_error"
+      }
+    },
+    "props_disabled": {
+      "interface_version": 1,
+      "coverage": "partial_prefill",
+      "state_owner": "llama_gpu",
+      "full_npu_prefill": false,
+      "npu_disabled": true,
+      "prefill_plans": 1,
+      "decode_plans": 0,
+      "automatic_plans": 2,
+      "mixed_or_verify_plans": 0,
+      "npu_pieces": 0,
+      "npu_matmul_nodes": 0,
+      "failures": 1,
+      "input_transfer_bytes": 16777216,
+      "output_transfer_bytes": 0,
+      "input_transfer_ms": 0.654,
+      "output_transfer_ms": 0,
+      "npu_copy_budget_bytes": 8589934592,
+      "npu_planned_weight_bytes": 1542979584
+    },
+    "fresh_gpu_recovery": {
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "4"
+          }
+        }
+      ],
+      "created": 1791334437,
+      "model": "small-task",
+      "system_fingerprint": "b1-b6b003d",
+      "object": "chat.completion",
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 9641,
+        "total_tokens": 9643,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "id": "chatcmpl-jBdub4l0FzpXuAxBvsZypWeDQOz2AqLa",
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 9641,
+        "prompt_ms": 7909.893,
+        "prompt_per_token_ms": 0.8204432112851364,
+        "prompt_per_second": 1218.8534029474229,
+        "predicted_n": 2,
+        "predicted_ms": 76.292,
+        "predicted_per_token_ms": 76.292,
+        "predicted_per_second": 13.107534210664289
+      }
+    },
+    "props_after": {
+      "interface_version": 1,
+      "coverage": "partial_prefill",
+      "state_owner": "llama_gpu",
+      "full_npu_prefill": false,
+      "npu_disabled": true,
+      "prefill_plans": 7,
+      "decode_plans": 1,
+      "automatic_plans": 2,
+      "mixed_or_verify_plans": 0,
+      "npu_pieces": 0,
+      "npu_matmul_nodes": 0,
+      "failures": 1,
+      "input_transfer_bytes": 16777216,
+      "output_transfer_bytes": 0,
+      "input_transfer_ms": 0.654,
+      "output_transfer_ms": 0,
+      "npu_copy_budget_bytes": 8589934592,
+      "npu_planned_weight_bytes": 1542979584
+    }
+  },
+  "release_binary_hashes": {
+    "exit_code": 0,
+    "running": false,
+    "output": "066f51cd291dbe2ad7a0483d42b360a21a4c3ac0b3f5382cb9664b2f76954bf9  /opt/llama/libllama.so\n0ad14b7d5346cb0050880888a394b8e575017b2fb9ef1f4b672a5560afe201c7  /opt/llama/libggml-xdna.so\n97ecd03b929eead060fb9774e0b0109b6ad79f5674f86715f0a97d2de1ced1de  /opt/llama/libggml-vulkan.so\n365d62e6ba52c26d3dd55d27129f0c122d42fee655c2467472522d3dbadd9fe7  /opt/llama/bfp16_gemm.xclbin\n"
+  },
+  "benchmark_binary_hashes_and_resources": {
+    "exit_code": 0,
+    "running": false,
+    "output": "2432069632\nlow 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\nusage_usec 1730383696\nuser_usec 1677893804\nsystem_usec 52489891\nnice_usec 11000\ncore_sched.force_idle_usec 0\nnr_periods 6462\nnr_throttled 1\nthrottled_usec 327294\nnr_bursts 0\nburst_usec 0\n7.0.0-30-generic\nsource_revision=5f6ff4c49bdd9fa8320f1f35de53d077df9f275f\nllama_tag=b10944\nllama_revision=b6b003d2cb29647d968302eb2db8da6f66303b3e\n066f51cd291dbe2ad7a0483d42b360a21a4c3ac0b3f5382cb9664b2f76954bf9  /opt/llama/libllama.so\n0ad14b7d5346cb0050880888a394b8e575017b2fb9ef1f4b672a5560afe201c7  /opt/llama/libggml-xdna.so\n97ecd03b929eead060fb9774e0b0109b6ad79f5674f86715f0a97d2de1ced1de  /opt/llama/libggml-vulkan.so\n365d62e6ba52c26d3dd55d27129f0c122d42fee655c2467472522d3dbadd9fe7  /opt/llama/bfp16_gemm.xclbin\n"
+  },
+  "binary_equivalence_scope": "libllama.so, libggml-xdna.so, libggml-vulkan.so and the XCLBIN have identical SHA256 between benchmark and released images; other binaries were not compared.",
+  "benchmark": {
+    "summary": [
+      {
+        "prompt_tokens": 8192,
+        "gpu_mean_seconds": 6.251973926,
+        "hybrid_mean_seconds": 5.009699793,
+        "time_reduction_percent": 19.87
+      },
+      {
+        "prompt_tokens": 32768,
+        "gpu_mean_seconds": 35.742185089,
+        "hybrid_mean_seconds": 32.360100929,
+        "time_reduction_percent": 9.46
+      },
+      {
+        "prompt_tokens": 65536,
+        "gpu_mean_seconds": 97.703712363,
+        "hybrid_mean_seconds": 97.383256802,
+        "time_reduction_percent": 0.33
+      }
+    ],
+    "gpu": [
+      {
+        "build_commit": "b6b003d",
+        "build_number": 1,
+        "cpu_info": "AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+        "gpu_info": "AMD Radeon 890M Graphics (RADV STRIX1), AMD XDNA2 NPU (prompt work, next to the Vulkan GPU)",
+        "backends": "Vulkan,XDNA",
+        "model_filename": "/models/hub/models--unsloth--Qwen3.5-2B-GGUF/snapshots/f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-Q4_K_M.gguf",
+        "model_type": "qwen35 2B Q4_K - Medium",
+        "model_size": 1269873920,
+        "model_n_params": 1881825088,
+        "n_batch": 2048,
+        "n_ubatch": 2048,
+        "n_threads": 12,
+        "cpu_mask": "0x0",
+        "cpu_strict": false,
+        "poll": 50,
+        "type_k": "f16",
+        "type_v": "f16",
+        "n_gpu_layers": 99,
+        "n_cpu_moe": 0,
+        "split_mode": "layer",
+        "main_gpu": 0,
+        "no_kv_offload": false,
+        "flash_attn": -1,
+        "devices": "Vulkan0",
+        "tensor_split": "1.00",
+        "tensor_buft_overrides": "none",
+        "load_mode": "auto",
+        "lazy_mode": "auto",
+        "embeddings": false,
+        "no_op_offload": 0,
+        "no_host": false,
+        "fit_target": 0,
+        "fit_min_ctx": 0,
+        "n_prompt": 8192,
+        "n_gen": 0,
+        "n_depth": 0,
+        "test_time": "2026-10-07T00:28:13Z",
+        "avg_ns": 6251973926,
+        "stddev_ns": 21055295,
+        "avg_ts": 1310.316092,
+        "stddev_ts": 4.420051,
+        "samples_ns": [
+          6259898992,
+          6267916524,
+          6228106263
+        ],
+        "samples_ts": [
+          1308.65,
+          1306.97,
+          1315.33
+        ]
+      },
+      {
+        "build_commit": "b6b003d",
+        "build_number": 1,
+        "cpu_info": "AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+        "gpu_info": "AMD Radeon 890M Graphics (RADV STRIX1), AMD XDNA2 NPU (prompt work, next to the Vulkan GPU)",
+        "backends": "Vulkan,XDNA",
+        "model_filename": "/models/hub/models--unsloth--Qwen3.5-2B-GGUF/snapshots/f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-Q4_K_M.gguf",
+        "model_type": "qwen35 2B Q4_K - Medium",
+        "model_size": 1269873920,
+        "model_n_params": 1881825088,
+        "n_batch": 2048,
+        "n_ubatch": 2048,
+        "n_threads": 12,
+        "cpu_mask": "0x0",
+        "cpu_strict": false,
+        "poll": 50,
+        "type_k": "f16",
+        "type_v": "f16",
+        "n_gpu_layers": 99,
+        "n_cpu_moe": 0,
+        "split_mode": "layer",
+        "main_gpu": 0,
+        "no_kv_offload": false,
+        "flash_attn": -1,
+        "devices": "Vulkan0",
+        "tensor_split": "1.00",
+        "tensor_buft_overrides": "none",
+        "load_mode": "auto",
+        "lazy_mode": "auto",
+        "embeddings": false,
+        "no_op_offload": 0,
+        "no_host": false,
+        "fit_target": 0,
+        "fit_min_ctx": 0,
+        "n_prompt": 32768,
+        "n_gen": 0,
+        "n_depth": 0,
+        "test_time": "2026-10-07T00:28:38Z",
+        "avg_ns": 35742185089,
+        "stddev_ns": 305219663,
+        "avg_ts": 916.83221,
+        "stddev_ts": 7.79713,
+        "samples_ns": [
+          36088129438,
+          35627530046,
+          35510895784
+        ],
+        "samples_ts": [
+          907.999,
+          919.738,
+          922.759
+        ]
+      },
+      {
+        "build_commit": "b6b003d",
+        "build_number": 1,
+        "cpu_info": "AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+        "gpu_info": "AMD Radeon 890M Graphics (RADV STRIX1), AMD XDNA2 NPU (prompt work, next to the Vulkan GPU)",
+        "backends": "Vulkan,XDNA",
+        "model_filename": "/models/hub/models--unsloth--Qwen3.5-2B-GGUF/snapshots/f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-Q4_K_M.gguf",
+        "model_type": "qwen35 2B Q4_K - Medium",
+        "model_size": 1269873920,
+        "model_n_params": 1881825088,
+        "n_batch": 2048,
+        "n_ubatch": 2048,
+        "n_threads": 12,
+        "cpu_mask": "0x0",
+        "cpu_strict": false,
+        "poll": 50,
+        "type_k": "f16",
+        "type_v": "f16",
+        "n_gpu_layers": 99,
+        "n_cpu_moe": 0,
+        "split_mode": "layer",
+        "main_gpu": 0,
+        "no_kv_offload": false,
+        "flash_attn": -1,
+        "devices": "Vulkan0",
+        "tensor_split": "1.00",
+        "tensor_buft_overrides": "none",
+        "load_mode": "auto",
+        "lazy_mode": "auto",
+        "embeddings": false,
+        "no_op_offload": 0,
+        "no_host": false,
+        "fit_target": 0,
+        "fit_min_ctx": 0,
+        "n_prompt": 65536,
+        "n_gen": 0,
+        "n_depth": 0,
+        "test_time": "2026-10-07T00:31:02Z",
+        "avg_ns": 97703712363,
+        "stddev_ns": 1542309060,
+        "avg_ts": 670.874561,
+        "stddev_ts": 10.635466,
+        "samples_ns": [
+          96040403667,
+          99086520208,
+          97984213216
+        ],
+        "samples_ts": [
+          682.379,
+          661.402,
+          668.842
+        ]
+      }
+    ],
+    "hybrid": [
+      {
+        "build_commit": "b6b003d",
+        "build_number": 1,
+        "cpu_info": "AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+        "gpu_info": "AMD Radeon 890M Graphics (RADV STRIX1), AMD XDNA2 NPU (prompt work, next to the Vulkan GPU)",
+        "backends": "Vulkan,XDNA",
+        "model_filename": "/models/hub/models--unsloth--Qwen3.5-2B-GGUF/snapshots/f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-Q4_K_M.gguf",
+        "model_type": "qwen35 2B Q4_K - Medium",
+        "model_size": 1269873920,
+        "model_n_params": 1881825088,
+        "n_batch": 2048,
+        "n_ubatch": 2048,
+        "n_threads": 12,
+        "cpu_mask": "0x0",
+        "cpu_strict": false,
+        "poll": 50,
+        "type_k": "f16",
+        "type_v": "f16",
+        "n_gpu_layers": 99,
+        "n_cpu_moe": 0,
+        "split_mode": "layer",
+        "main_gpu": 0,
+        "no_kv_offload": false,
+        "flash_attn": -1,
+        "devices": "XDNA0/Vulkan0",
+        "tensor_split": "0.00/1.00",
+        "tensor_buft_overrides": "none",
+        "load_mode": "auto",
+        "lazy_mode": "auto",
+        "embeddings": false,
+        "no_op_offload": 0,
+        "no_host": false,
+        "fit_target": 0,
+        "fit_min_ctx": 0,
+        "n_prompt": 8192,
+        "n_gen": 0,
+        "n_depth": 0,
+        "test_time": "2026-10-07T00:37:39Z",
+        "avg_ns": 5009699793,
+        "stddev_ns": 47255431,
+        "avg_ts": 1635.325032,
+        "stddev_ts": 15.473694,
+        "samples_ns": [
+          4957968405,
+          5020533073,
+          5050597901
+        ],
+        "samples_ts": [
+          1652.29,
+          1631.7,
+          1621.99
+        ]
+      },
+      {
+        "build_commit": "b6b003d",
+        "build_number": 1,
+        "cpu_info": "AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+        "gpu_info": "AMD Radeon 890M Graphics (RADV STRIX1), AMD XDNA2 NPU (prompt work, next to the Vulkan GPU)",
+        "backends": "Vulkan,XDNA",
+        "model_filename": "/models/hub/models--unsloth--Qwen3.5-2B-GGUF/snapshots/f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-Q4_K_M.gguf",
+        "model_type": "qwen35 2B Q4_K - Medium",
+        "model_size": 1269873920,
+        "model_n_params": 1881825088,
+        "n_batch": 2048,
+        "n_ubatch": 2048,
+        "n_threads": 12,
+        "cpu_mask": "0x0",
+        "cpu_strict": false,
+        "poll": 50,
+        "type_k": "f16",
+        "type_v": "f16",
+        "n_gpu_layers": 99,
+        "n_cpu_moe": 0,
+        "split_mode": "layer",
+        "main_gpu": 0,
+        "no_kv_offload": false,
+        "flash_attn": -1,
+        "devices": "XDNA0/Vulkan0",
+        "tensor_split": "0.00/1.00",
+        "tensor_buft_overrides": "none",
+        "load_mode": "auto",
+        "lazy_mode": "auto",
+        "embeddings": false,
+        "no_op_offload": 0,
+        "no_host": false,
+        "fit_target": 0,
+        "fit_min_ctx": 0,
+        "n_prompt": 32768,
+        "n_gen": 0,
+        "n_depth": 0,
+        "test_time": "2026-10-07T00:38:02Z",
+        "avg_ns": 32360100929,
+        "stddev_ns": 641400154,
+        "avg_ts": 1012.867944,
+        "stddev_ts": 19.899693,
+        "samples_ns": [
+          33081994316,
+          31855813569,
+          32142494904
+        ],
+        "samples_ts": [
+          990.509,
+          1028.63,
+          1019.46
+        ]
+      },
+      {
+        "build_commit": "b6b003d",
+        "build_number": 1,
+        "cpu_info": "AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+        "gpu_info": "AMD Radeon 890M Graphics (RADV STRIX1), AMD XDNA2 NPU (prompt work, next to the Vulkan GPU)",
+        "backends": "Vulkan,XDNA",
+        "model_filename": "/models/hub/models--unsloth--Qwen3.5-2B-GGUF/snapshots/f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-Q4_K_M.gguf",
+        "model_type": "qwen35 2B Q4_K - Medium",
+        "model_size": 1269873920,
+        "model_n_params": 1881825088,
+        "n_batch": 2048,
+        "n_ubatch": 2048,
+        "n_threads": 12,
+        "cpu_mask": "0x0",
+        "cpu_strict": false,
+        "poll": 50,
+        "type_k": "f16",
+        "type_v": "f16",
+        "n_gpu_layers": 99,
+        "n_cpu_moe": 0,
+        "split_mode": "layer",
+        "main_gpu": 0,
+        "no_kv_offload": false,
+        "flash_attn": -1,
+        "devices": "XDNA0/Vulkan0",
+        "tensor_split": "0.00/1.00",
+        "tensor_buft_overrides": "none",
+        "load_mode": "auto",
+        "lazy_mode": "auto",
+        "embeddings": false,
+        "no_op_offload": 0,
+        "no_host": false,
+        "fit_target": 0,
+        "fit_min_ctx": 0,
+        "n_prompt": 65536,
+        "n_gen": 0,
+        "n_depth": 0,
+        "test_time": "2026-10-07T00:40:14Z",
+        "avg_ns": 97383256802,
+        "stddev_ns": 2029373780,
+        "avg_ts": 673.164843,
+        "stddev_ts": 14.033503,
+        "samples_ns": [
+          99407179432,
+          95348475544,
+          97394115432
+        ],
+        "samples_ts": [
+          659.268,
+          687.331,
+          672.895
+        ]
+      }
+    ],
+    "phase_policy": "automatic benchmark phases; serving requires explicit phases",
+    "method": "native synthetic llama-bench, n_gen=0, three measured repetitions per case, warmup excluded, cache cleared per run; loading and initial weight packing excluded",
+    "controls": "same GGUF/source, batch and ubatch 2048, threads 12, ngl 99, 8 GiB NPU copy budget; one actor at a time",
+    "limits": [
+      "Other host stacks remained running.",
+      "Modes ran sequentially, GPU then hybrid; order/power effects were not balanced.",
+      "No image pulls overlapped measurements.",
+      "64K difference is smaller than run variation; no useful gain established.",
+      "Warmed synthetic prefill is not end-to-end cold request latency or a larger-model quality evaluation."
+    ],
+    "npu_trace_line_count": 295,
+    "npu_trace_samples": [
+      "xdna times, 196 matmuls in 89 pieces: all 922.3 ms | read inputs 68.2, encode 2.9, NPU 227.9 (330 calls), decode 0.0, write results 123.7, weight copies 2286.4 ms",
+      "xdna trace: 100 pieces, 221 matmul results, 0 with no recorded reader",
+      "xdna trace: 13900 pieces, 31114 matmul results, 0 with no recorded reader",
+      "xdna times, 200 matmuls in 89 pieces: all 963.5 ms | read inputs 73.4, encode 2.9, NPU 257.6 (336 calls), decode 0.0, write results 126.8, weight copies 0.0 ms"
+    ]
+  },
+  "resource_summary": {
+    "scope": "main source image, combined API and benchmark probe lifetime",
+    "cgroup_memory_peak_bytes": 2432069632,
+    "oom_events": 0,
+    "cpu_quota_throttle_events": 1,
+    "cpu_quota_throttled_microseconds": 327294,
+    "limits": "Cgroup memory does not fully attribute GPU/NPU driver allocations; no power measurement."
+  },
+  "production": {
+    "url": "https://hybrid.swarm.nulteck.com",
+    "stack_id": 73,
+    "endpoint_id": 7,
+    "container_id": "c6de2d7684aab4c75fd63d2de26771e378d22df50b5da2d4f95d989038faae47",
+    "image_id": "sha256:cc46adc75fe1356ab20ddf15f5e95e4eb1f63b53dca2ba7dd618631c6fe948f8",
+    "configured_image": "ghcr.io/nulifyer/llama-xdna-hybrid@sha256:982a586fdd49bfd181b8e4613ded8d8e857969bf650ecb44ee74c1120000118d",
+    "health": "healthy",
+    "unauthenticated_status": {
+      "/v1/models": 401,
+      "/props": 401,
+      "/metrics": 401
+    },
+    "models": {
+      "models": [
+        {
+          "name": "small-task",
+          "model": "small-task",
+          "modified_at": "",
+          "size": "",
+          "digest": "",
+          "type": "model",
+          "description": "",
+          "tags": [
+            ""
+          ],
+          "capabilities": [
+            "completion"
+          ],
+          "parameters": "",
+          "details": {
+            "parent_model": "",
+            "format": "gguf",
+            "family": "",
+            "families": [
+              ""
+            ],
+            "parameter_size": "",
+            "quantization_level": ""
+          }
+        }
+      ],
+      "object": "list",
+      "data": [
+        {
+          "id": "small-task",
+          "aliases": [
+            "small-task"
+          ],
+          "tags": [],
+          "object": "model",
+          "created": 1791334658,
+          "owned_by": "llamacpp",
+          "meta": {
+            "vocab_type": true,
+            "n_vocab": 248320,
+            "n_ctx": 32768,
+            "n_ctx_train": 262144,
+            "n_embd": 2048,
+            "n_params": 1881825088,
+            "size": 1269873920,
+            "ftype": "Q4_K - Medium"
+          }
+        }
+      ]
+    },
+    "acceptance": {
+      "long_chat": {
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "4"
+            }
+          }
+        ],
+        "created": 1791334665,
+        "model": "small-task",
+        "system_fingerprint": "b1-b6b003d",
+        "object": "chat.completion",
+        "usage": {
+          "completion_tokens": 2,
+          "prompt_tokens": 9641,
+          "total_tokens": 9643,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "id": "chatcmpl-0ba5PefA18zGtOOrk1kNBbpPjSN62gw7",
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 9641,
+          "prompt_ms": 6477.211,
+          "prompt_per_token_ms": 0.671840161808941,
+          "prompt_per_second": 1488.4492723797325,
+          "predicted_n": 2,
+          "predicted_ms": 22.99,
+          "predicted_per_token_ms": 22.99,
+          "predicted_per_second": 43.49717268377556
+        }
+      },
+      "continuation": {
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "7"
+            }
+          }
+        ],
+        "created": 1791334665,
+        "model": "small-task",
+        "system_fingerprint": "b1-b6b003d",
+        "object": "chat.completion",
+        "usage": {
+          "completion_tokens": 2,
+          "prompt_tokens": 9666,
+          "total_tokens": 9668,
+          "prompt_tokens_details": {
+            "cached_tokens": 9637
+          }
+        },
+        "id": "chatcmpl-rlH4FV674mr756VaWAGtZVJrkf1zc0RS",
+        "timings": {
+          "cache_n": 9637,
+          "prompt_n": 29,
+          "prompt_ms": 343.778,
+          "prompt_per_token_ms": 11.854413793103449,
+          "prompt_per_second": 84.35676512167736,
+          "predicted_n": 2,
+          "predicted_ms": 23.317,
+          "predicted_per_token_ms": 23.317,
+          "predicted_per_second": 42.887163871853154
+        }
+      },
+      "concurrent_clients": [
+        {
+          "choices": [
+            {
+              "finish_reason": "stop",
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "4"
+              }
+            }
+          ],
+          "created": 1791334666,
+          "model": "small-task",
+          "system_fingerprint": "b1-b6b003d",
+          "object": "chat.completion",
+          "usage": {
+            "completion_tokens": 2,
+            "prompt_tokens": 26,
+            "total_tokens": 28,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            }
+          },
+          "id": "chatcmpl-j1laSHU4Bc7XyPzx63xxSgaIeJPqrfg4",
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 26,
+            "prompt_ms": 144.822,
+            "prompt_per_token_ms": 5.570076923076924,
+            "prompt_per_second": 179.5307342807032,
+            "predicted_n": 2,
+            "predicted_ms": 21.836,
+            "predicted_per_token_ms": 21.836,
+            "predicted_per_second": 45.79593332112109
+          }
+        },
+        {
+          "choices": [
+            {
+              "finish_reason": "stop",
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "6"
+              }
+            }
+          ],
+          "created": 1791334666,
+          "model": "small-task",
+          "system_fingerprint": "b1-b6b003d",
+          "object": "chat.completion",
+          "usage": {
+            "completion_tokens": 2,
+            "prompt_tokens": 26,
+            "total_tokens": 28,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            }
+          },
+          "id": "chatcmpl-IXHgo7A1mLFxVj5frUtKwT8omdbIVZyr",
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 26,
+            "prompt_ms": 146.512,
+            "prompt_per_token_ms": 5.635076923076923,
+            "prompt_per_second": 177.45986676859232,
+            "predicted_n": 2,
+            "predicted_ms": 21.478,
+            "predicted_per_token_ms": 21.478,
+            "predicted_per_second": 46.55926995064717
+          }
+        }
+      ],
+      "single_tool_smoke": {
+        "choices": [
+          {
+            "finish_reason": "tool_calls",
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "type": "function",
+                  "function": {
+                    "name": "turn_on",
+                    "arguments": "{\"entity_id\":\"light.kitchen\"}"
+                  },
+                  "id": "5O487lLiyyLlACZRizKfObrf0HE6McbS"
+                }
+              ]
+            }
+          }
+        ],
+        "created": 1791334667,
+        "model": "small-task",
+        "system_fingerprint": "b1-b6b003d",
+        "object": "chat.completion",
+        "usage": {
+          "completion_tokens": 30,
+          "prompt_tokens": 289,
+          "total_tokens": 319,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "id": "chatcmpl-9TIbB08W7prwIYVSm5ZdLM6QxCaw6j6I",
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 289,
+          "prompt_ms": 458.771,
+          "prompt_per_token_ms": 1.5874429065743945,
+          "prompt_per_second": 629.9439153739011,
+          "predicted_n": 30,
+          "predicted_ms": 564.977,
+          "predicted_per_token_ms": 19.481965517241377,
+          "predicted_per_second": 51.32952314872995
+        }
+      },
+      "props_before": {
+        "interface_version": 1,
+        "coverage": "partial_prefill",
+        "state_owner": "llama_gpu",
+        "full_npu_prefill": false,
+        "npu_disabled": false,
+        "prefill_plans": 20,
+        "decode_plans": 36,
+        "automatic_plans": 2,
+        "mixed_or_verify_plans": 0,
+        "npu_pieces": 335,
+        "npu_matmul_nodes": 750,
+        "failures": 0,
+        "input_transfer_bytes": 7190380544,
+        "output_transfer_bytes": 10657751040,
+        "input_transfer_ms": 262.866,
+        "output_transfer_ms": 452.576,
+        "npu_copy_budget_bytes": 8589934592,
+        "npu_planned_weight_bytes": 1542979584
+      },
+      "props_after": {
+        "interface_version": 1,
+        "coverage": "partial_prefill",
+        "state_owner": "llama_gpu",
+        "full_npu_prefill": false,
+        "npu_disabled": false,
+        "prefill_plans": 36,
+        "decode_plans": 69,
+        "automatic_plans": 2,
+        "mixed_or_verify_plans": 0,
+        "npu_pieces": 670,
+        "npu_matmul_nodes": 1500,
+        "failures": 0,
+        "input_transfer_bytes": 14380761088,
+        "output_transfer_bytes": 21315502080,
+        "input_transfer_ms": 520.243,
+        "output_transfer_ms": 900.603,
+        "npu_copy_budget_bytes": 8589934592,
+        "npu_planned_weight_bytes": 1542979584
+      }
+    },
+    "stream_cancel": {
+      "first_event": "data: {\"choices\":[{\"finish_reason\":null,\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":null}}],\"created\":1791334668,\"id\":\"chatcmpl-OBvgMpnCjGfVU7wAQorqsUZVGgLQtYPd\",\"model\":\"small-task\",\"system_fingerprint\":\"b1-b6b003d\",\"object\":\"chat.completion.chunk\"}\n",
+      "fresh_request": {
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "4"
+            }
+          }
+        ],
+        "created": 1791334668,
+        "model": "small-task",
+        "system_fingerprint": "b1-b6b003d",
+        "object": "chat.completion",
+        "usage": {
+          "completion_tokens": 2,
+          "prompt_tokens": 26,
+          "total_tokens": 28,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "id": "chatcmpl-Mhoxrm8omVz10vmqIwJ8rNyBh4dbN0Le",
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 26,
+          "prompt_ms": 141.439,
+          "prompt_per_token_ms": 5.439961538461538,
+          "prompt_per_second": 183.8248290782599,
+          "predicted_n": 2,
+          "predicted_ms": 21.852,
+          "predicted_per_token_ms": 21.852,
+          "predicted_per_second": 45.762401610836534
+        }
+      },
+      "fresh_request_seconds": 0.29186188200037577
+    },
+    "effective_context": 32768,
+    "inference_slots": 1,
+    "npu_status": {
+      "interface_version": 1,
+      "coverage": "partial_prefill",
+      "state_owner": "llama_gpu",
+      "full_npu_prefill": false,
+      "npu_disabled": false,
+      "prefill_plans": 40,
+      "decode_plans": 72,
+      "automatic_plans": 2,
+      "mixed_or_verify_plans": 0,
+      "npu_pieces": 670,
+      "npu_matmul_nodes": 1500,
+      "failures": 0,
+      "input_transfer_bytes": 14380761088,
+      "output_transfer_bytes": 21315502080,
+      "input_transfer_ms": 520.243,
+      "output_transfer_ms": 900.603,
+      "npu_copy_budget_bytes": 8589934592,
+      "npu_planned_weight_bytes": 1542979584
+    },
+    "original_lemonade": "exited"
+  },
+  "earlier_budget_clamp_check": {
+    "source_scope": "5ecc4a6 image, before final counter-label fix; same memory-budget implementation",
+    "result": {
+      "requested_copy_budget_gib": 100,
+      "container_limit_gib": 24,
+      "props": {
+        "interface_version": 1,
+        "coverage": "partial_prefill",
+        "state_owner": "llama_gpu",
+        "full_npu_prefill": false,
+        "npu_disabled": false,
+        "prefill_plans": 6,
+        "decode_plans": 1,
+        "mixed_or_verify_plans": 2,
+        "npu_pieces": 335,
+        "npu_matmul_nodes": 750,
+        "failures": 0,
+        "input_transfer_bytes": 7190380544,
+        "output_transfer_bytes": 10657751040,
+        "input_transfer_ms": 275.326,
+        "output_transfer_ms": 447.304,
+        "npu_copy_budget_bytes": 21286150144,
+        "npu_planned_weight_bytes": 1542979584
+      },
+      "response": {
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "4"
+            }
+          }
+        ],
+        "created": 1791332652,
+        "model": "small-task",
+        "system_fingerprint": "b1-b6b003d",
+        "object": "chat.completion",
+        "usage": {
+          "completion_tokens": 2,
+          "prompt_tokens": 9641,
+          "total_tokens": 9643,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "id": "chatcmpl-QuLJyLz14Lh8b3VlvZtoRBh2hqQfYlRh",
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 9641,
+          "prompt_ms": 9314.861,
+          "prompt_per_token_ms": 0.9661716626905923,
+          "prompt_per_second": 1035.0127607915995,
+          "predicted_n": 2,
+          "predicted_ms": 23.793,
+          "predicted_per_token_ms": 23.793,
+          "predicted_per_second": 42.02916824276048
+        }
+      }
+    }
+  },
+  "coverage": {
+    "full_npu_prefill": false,
+    "npu": "eligible weight GEMMs and fused gate/up/SiLU; adjacent operations on host",
+    "gpu": "attention, convolution, gated-delta recurrence, persistent state and decode",
+    "python_production_server": false,
+    "lemonade_recipe_integrated": false
+  },
+  "remaining_validation": [
+    "Real driver hang and unresolved kernel-wait recovery.",
+    "Broader tool-call accuracy and larger/roleplay model evaluation.",
+    "General independently running contexts; deployment uses one inference slot.",
+    "Full NPU attention/recurrence kernels and Lemonade resource admission integration."
+  ],
+  "cleanup": "All task-created probe containers removed without deleting volumes. Original Lemonade remains stopped."
+}
