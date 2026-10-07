@@ -106,7 +106,7 @@ Prompt batches may use the NPU; decode, mixed batches and speculative verificati
 use the GPU. A phase or failure-epoch change invalidates cached graph placement.
 The existing llama context owns attention and recurrent state across the switch.
 A failed NPU request returns a compute error and clears affected server slots.
-The NPU is then disabled until process restart. Unresolved 60-second kernel waits
+The NPU is then disabled until process restart. Unresolved or abnormal kernel waits
 exit the process instead of releasing buffers that may still be in use. Genuine
 driver hangs need separate testing. GPU attention limits long-context speedups.
 

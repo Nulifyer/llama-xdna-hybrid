@@ -7,7 +7,7 @@ batches and speculative verification use GPU. This is partial NPU prefill.
 
 The native C++ OpenAI-compatible server exposes authenticated hybrid counters
 through /props, caps NPU copies to available memory, and rejects affected
-requests on NPU errors. A timed-out kernel wait exits the process. No Python
+requests on NPU errors. An unresolved kernel wait exits the process. No Python
 serving or FLM state conversion is used. See hybrid-manifest.json for coverage.
 
 GitHub CI verifies builds and host tests. Hardware evidence is attached after

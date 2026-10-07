@@ -8,7 +8,7 @@ service. No credentials are included in the evidence returned by this module.
 from concurrent.futures import ThreadPoolExecutor
 
 
-def chat_body(messages, model="ha-small"):
+def chat_body(messages, model="small-task"):
     return {"model": model, "messages": messages, "temperature": 0,
             "max_tokens": 32, "cache_prompt": False,
             "chat_template_kwargs": {"enable_thinking": False}}
@@ -50,7 +50,9 @@ def run(request, hybrid=True):
         assert not h["npu_disabled"] and h["failures"] == 0
     messages += [{"role": "assistant", "content": "4"},
                  {"role": "user", "content": "Add 3 to your previous answer. Reply with only the number."}]
-    status, follow = request("POST", "/v1/chat/completions", chat_body(messages))
+    follow_body = chat_body(messages)
+    follow_body["cache_prompt"] = True
+    status, follow = request("POST", "/v1/chat/completions", follow_body)
     assert status == 200 and answer(follow) == "7", ("continuation", status, follow)
     checks["continuation"] = follow
     status, continued = request("GET", "/props", None)
@@ -67,6 +69,20 @@ def run(request, hybrid=True):
         results = [a.result(), b.result()]
     assert [answer(x) for x in results] == ["4", "6"], results
     checks["concurrent_clients"] = results
+    tool_body = chat_body([{"role": "user", "content":
+                           "Turn on the kitchen light using turn_on. Its entity_id is light.kitchen."}])
+    tool_body["max_tokens"] = 128
+    tool_body["tools"] = [{"type": "function", "function": {"name": "turn_on",
+                          "description": "Turn on a Home Assistant entity.",
+                          "parameters": {"type": "object", "properties": {
+                              "entity_id": {"type": "string"}}, "required": ["entity_id"]}}}]
+    status, tool = request("POST", "/v1/chat/completions", tool_body)
+    assert status == 200, ("tool smoke", status, tool)
+    calls = tool["choices"][0]["message"].get("tool_calls", [])
+    assert len(calls) == 1 and calls[0]["function"]["name"] == "turn_on", tool
+    import json
+    assert json.loads(calls[0]["function"]["arguments"])["entity_id"] == "light.kitchen", tool
+    checks["single_tool_smoke"] = tool
     status, end = request("GET", "/props", None)
     assert status == 200
     if hybrid:

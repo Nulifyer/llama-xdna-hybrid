@@ -295,10 +295,12 @@ bool npu_bfp16::batch::wait(std::string & err, double * ms) {
     if (!in_flight_) { err = "batch waited without a start"; return false; }
     in_flight_ = false;
     bool ok;
+    const char * strict_env = std::getenv("GGML_XDNA_FAIL_CLOSED");
+    const bool strict = strict_env && std::atoi(strict_env) != 0;
     if (rl_) {
         const int status = xrtsh_runlist_wait_ms(rl_, 60000);
-        if (status == 1) {
-            std::fprintf(stderr, "xdna: NPU runlist timed out; exiting without reusing live buffers\n");
+        if (status == 1 || (status < 0 && strict)) {
+            std::fprintf(stderr, "xdna: NPU runlist did not drain (status %d); exiting without reusing live buffers\n", status);
             std::_Exit(70);
         }
         ok = status == 0;
@@ -307,8 +309,8 @@ bool npu_bfp16::batch::wait(std::string & err, double * ms) {
         rl_ = nullptr;
     } else {
         const int state = xrtsh_run_wait_ms(calls_[0].run, 60000);
-        if (state == 8) {
-            std::fprintf(stderr, "xdna: NPU run timed out; exiting without reusing live buffers\n");
+        if (state == 8 || (state != 4 && strict)) {
+            std::fprintf(stderr, "xdna: NPU run did not complete (state %d); exiting without reusing live buffers\n", state);
             std::_Exit(70);
         }
         ok = state == 4;

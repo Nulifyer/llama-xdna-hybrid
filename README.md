@@ -1,9 +1,14 @@
 # llama-xdna-hybrid
 
 This fork adds Linux builds and containers to
-[Cyronius/ggml-xdna](https://github.com/Cyronius/ggml-xdna). It uses unmodified,
-pinned llama.cpp b10944 with a compiled XDNA backend. Eligible prefill
-operations run on the NPU; attention, the KV cache and decoding stay on Vulkan.
+[Cyronius/ggml-xdna](https://github.com/Cyronius/ggml-xdna). Linux builds pinned
+llama.cpp b10944 with an explicit prefill/decode scheduler patch and a compiled
+XDNA backend. Eligible prompt operations run on the NPU; attention, recurrent
+state and decoding stay on Vulkan. This is partial NPU prefill on one model.
+
+The native C++ server provides an OpenAI-compatible API, authenticated hybrid
+metrics, bounded weight copies and strict NPU failure handling. The packaged
+manifest states actual operator coverage. No Python serving is used.
 
 Linux support is experimental. See [Linux setup and validation](docs/Linux.md)
 and [current verification state](.agents/STATUS.md). A successful build is not
