@@ -125,7 +125,7 @@ static xdna_mode xdna_run_mode() {
 // Placement epochs force the next request to rebuild its graph for Vulkan.
 static std::atomic<bool> g_npu_broken{ false };
 static thread_local uint32_t g_phase = xdna_plan::automatic;
-static std::atomic<uint64_t> g_prefill_plans{0}, g_decode_plans{0}, g_mixed_plans{0};
+static std::atomic<uint64_t> g_prefill_plans{0}, g_decode_plans{0}, g_mixed_plans{0}, g_automatic_plans{0};
 static std::atomic<uint64_t> g_npu_pieces{0}, g_npu_matmul_nodes{0}, g_failures{0}, g_phase_epoch{0};
 static std::atomic<uint64_t> g_read_bytes{0}, g_write_bytes{0}, g_read_us{0}, g_write_us{0};
 static bool xdna_fail_closed() { return env_int("GGML_XDNA_FAIL_CLOSED", 0) != 0; }
@@ -1236,8 +1236,9 @@ static ggml_backend_dev_t ggml_backend_xdna_reg_device_get(ggml_backend_reg_t re
 static uint64_t xdna_set_phase(ggml_backend_t backend, uint32_t phase) {
     GGML_UNUSED(backend);
     g_phase = phase <= xdna_plan::verify ? phase : xdna_plan::mixed;
-    if (phase == xdna_plan::prefill) ++g_prefill_plans;
-    else if (phase == xdna_plan::decode) ++g_decode_plans;
+    if (g_phase == xdna_plan::prefill) ++g_prefill_plans;
+    else if (g_phase == xdna_plan::decode) ++g_decode_plans;
+    else if (g_phase == xdna_plan::automatic) ++g_automatic_plans;
     else ++g_mixed_plans;
     return (g_phase_epoch.load() << 8) | g_phase;
 }
@@ -1251,6 +1252,7 @@ static const char * xdna_stats_json() {
         << "\"npu_disabled\":" << (g_npu_broken ? "true" : "false")
         << ",\"prefill_plans\":" << g_prefill_plans.load()
         << ",\"decode_plans\":" << g_decode_plans.load()
+        << ",\"automatic_plans\":" << g_automatic_plans.load()
         << ",\"mixed_or_verify_plans\":" << g_mixed_plans.load()
         << ",\"npu_pieces\":" << g_npu_pieces.load()
         << ",\"npu_matmul_nodes\":" << g_npu_matmul_nodes.load()

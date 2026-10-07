@@ -21,7 +21,7 @@ def answer(response):
 def long_messages():
     return [{"role": "user", "content":
              "Ignore the filler and answer only the arithmetic question at the end.\n"
-             + "This is filler for a context test. " * 1000
+             + "This is filler for a context test. " * 1200
              + "\nWhat is 2 + 2? Reply with only the number."}]
 
 
@@ -54,6 +54,7 @@ def run(request, hybrid=True):
     follow_body["cache_prompt"] = True
     status, follow = request("POST", "/v1/chat/completions", follow_body)
     assert status == 200 and answer(follow) == "7", ("continuation", status, follow)
+    assert follow["timings"]["cache_n"] > 8192, "follow-up replayed the cached prompt"
     checks["continuation"] = follow
     status, continued = request("GET", "/props", None)
     assert status == 200

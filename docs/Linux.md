@@ -28,6 +28,7 @@ docker run --rm --name hybrid-test \
   --device /dev/accel/accel0 --device /dev/dri \
   --group-add "$(stat -c %g /dev/accel/accel0)" \
   --group-add "$(stat -c %g /dev/dri/renderD128)" \
+  --ulimit memlock=-1:-1 \
   --cap-drop ALL --security-opt no-new-privileges \
   --memory 24g --cpus 20 --shm-size 2g \
   -p 127.0.0.1:8080:8080 \
@@ -39,7 +40,9 @@ docker run --rm --name hybrid-test \
 The host needs a working `amdxdna` kernel driver and firmware. The image supplies
 Ubuntu 26.04 userspace, XRT 2.21.75 and Mesa Vulkan. It does not install host
 drivers. Adjust the device path and groups to the host. `/dev/kfd` is not needed
-for Vulkan. The service runs as UID 10001; model mounts must be readable by it.
+for Vulkan. XRT maps locked buffers larger than Docker's default 8 MiB
+memlock limit, so set `--ulimit memlock=-1:-1`. RAM and NPU copy budgets still
+apply. The service runs as UID 10001; model mounts must be readable by it.
 
 New GHCR packages are private by default. Authenticate Docker before pulling,
 or use a configured Portainer registry. The homelab already has authenticated

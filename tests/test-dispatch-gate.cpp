@@ -155,7 +155,16 @@ int main() {
         check(!ggml_backend_dev_supports_op(dev, make_mul_mat(ctx, GGML_TYPE_Q4_K, k, n, 13)),
               "short prompt tail stays on GPU");
         check(strstr(stats(), "\"full_npu_prefill\":false") != nullptr, "metrics declare actual partial-prefill coverage");
+        auto count = [](const char * value, const char * field) -> uint64_t {
+            const char * start = strstr(value, field);
+            return start ? strtoull(start + strlen(field), nullptr, 10) : 0;
+        };
+        uint64_t mixed_count = count(stats(), "\"mixed_or_verify_plans\":");
+        uint64_t automatic_count = count(stats(), "\"automatic_plans\":");
         phase(nullptr, 0);
+        check(count(stats(), "\"automatic_plans\":") == automatic_count + 1 &&
+              count(stats(), "\"mixed_or_verify_plans\":") == mixed_count,
+              "automatic reserve probes are counted separately from mixed request batches");
     }
 
     ggml_free(ctx);
