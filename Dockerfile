@@ -1,20 +1,22 @@
 FROM ubuntu:26.04 AS build
 ARG DEBIAN_FRONTEND=noninteractive
 ARG XRT_VERSION=1:2.21.75+dfsg-4
-ARG SOURCE_REVISION=unknown
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl git cmake make g++ jq libvulkan-dev glslc spirv-headers uuid-dev libxrt-dev=${XRT_VERSION} \
     libvulkan1 mesa-vulkan-drivers libssl3t64 libbrotli1 libzstd1 zlib1g \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
+COPY tools/build-llama.sh tools/
+COPY patches/ patches/
+RUN tools/build-llama.sh
 COPY . .
-RUN tools/build-llama.sh && \
-    cmake -S . -B build-linux -DCMAKE_BUILD_TYPE=Release -DGGML_XDNA_NPU=ON && \
+RUN cmake -S . -B build-linux -DCMAKE_BUILD_TYPE=Release -DGGML_XDNA_NPU=ON && \
     cmake --build build-linux -j4 && \
     VK_DRIVER_FILES="$(find /usr/share/vulkan/icd.d -name '*lvp*.json' -print -quit)" \
     GGML_VK_VISIBLE_DEVICES=0 GGML_VK_DISABLE_F16=1 GGML_VK_DISABLE_COOPMAT=1 GGML_XDNA_PINNED=0 \
-    ctest --test-dir build-linux -L 'host|nodriver' --output-on-failure && \
-    tools/package-linux.sh /out
+    ctest --test-dir build-linux -L 'host|nodriver' --output-on-failure
+ARG SOURCE_REVISION=unknown
+RUN tools/package-linux.sh /out
 
 FROM scratch AS artifacts
 COPY --from=build /out/ /

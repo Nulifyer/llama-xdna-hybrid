@@ -1,3 +1,5 @@
 *.sh text eol=lf
 *.bin binary
 *.xclbin binary
+# Unified patches require a leading space on empty context lines.
+patches/*.patch whitespace=-blank-at-eol,-blank-at-eof
