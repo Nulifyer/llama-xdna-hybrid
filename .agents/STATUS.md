@@ -6,7 +6,7 @@ The user explicitly authorized implementation, tests, publishing and deployment.
 Homelab owns consumer integration and infrastructure configuration.
 
 Local verification: patched llama-server and llama-bench compile. Eight host
-checks passed before the added real-plugin phase contract assertions. Hardware
+checks passed, including the real-plugin phase contract assertions. Hardware
 verification and CI remain required before releasing linux-v0.2.0.
 
 Coverage is partial NPU prefill. Supported weight GEMMs and fused gate/up use

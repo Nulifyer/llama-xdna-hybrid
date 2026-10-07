@@ -3,7 +3,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG XRT_VERSION=1:2.21.75+dfsg-4
 ARG SOURCE_REVISION=unknown
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl git cmake make g++ jq libvulkan-dev glslc uuid-dev libxrt-dev=${XRT_VERSION} \
+    ca-certificates curl git cmake make g++ jq libvulkan-dev glslc spirv-headers uuid-dev libxrt-dev=${XRT_VERSION} \
     libvulkan1 mesa-vulkan-drivers libssl3t64 libbrotli1 libzstd1 zlib1g \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
