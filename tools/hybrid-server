@@ -3,6 +3,8 @@ set -euo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 export LD_LIBRARY_PATH="$root${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export GGML_BACKEND_PATH="$root/libggml-xdna.so"
+export GGML_XDNA_FAIL_CLOSED=1
+export GGML_XDNA_EXPLICIT_PHASE=1
 case ${1:-} in
     --help|-h|--version|--list-devices) exec "$root/llama-server" "$@" ;;
 esac

@@ -1,0 +1,152 @@
+diff --git a/include/llama.h b/include/llama.h
+index 3ab9359..880f090 100644
+--- a/include/llama.h
++++ b/include/llama.h
+@@ -987,6 +987,9 @@ extern "C" {
+     //    2 - aborted     (processed ubatches will remain in the context's memory)
+     //   -1 - invalid input batch
+     // < -1 - fatal error (processed ubatches will remain in the context's memory)
++    // Hybrid plugin extension: 0 automatic, 1 prefill, 2 decode, 3 mixed, 4 verification.
++    LLAMA_API void llama_set_hybrid_phase(struct llama_context * ctx, uint32_t phase);
++
+     LLAMA_API int32_t llama_decode(
+             struct llama_context * ctx,
+               struct llama_batch   batch);
+diff --git a/src/llama-context.cpp b/src/llama-context.cpp
+index 6334f3c..100c8e7 100644
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -1347,7 +1347,27 @@ llm_graph_result * llama_context::process_ubatch(const llama_ubatch & ubatch, ll
+     // in order to correctly reuse a graph, it's full topology has to be uniquely determined by these parameters
+     const auto gparams = graph_params(res, ubatch, mctx, gtype);
+ 
+-    if (!graph_reuse_disable && res->can_reuse(gparams)) {
++    ggml_backend_t xdna = nullptr;
++    bool hybrid_plan_changed = false;
++    for (auto & backend : backends) {
++        auto * dev = ggml_backend_get_device(backend.get());
++        if (!dev) continue;
++        auto * reg = ggml_backend_dev_backend_reg(dev);
++        using set_phase_fn = uint64_t (*)(ggml_backend_t, uint32_t);
++        auto set_phase = reinterpret_cast<set_phase_fn>(
++            ggml_backend_reg_get_proc_address(reg, "ggml_backend_xdna_set_phase_v1"));
++        if (!set_phase) continue;
++        xdna = backend.get();
++        const uint64_t epoch = set_phase(xdna, hybrid_phase);
++        hybrid_plan_changed = hybrid_plan_epoch != epoch;
++        if (hybrid_plan_changed) {
++            ggml_backend_sched_synchronize(sched.get());
++            hybrid_plan_epoch = epoch;
++        }
++    }
++
++
++    if (!graph_reuse_disable && !hybrid_plan_changed && res->can_reuse(gparams)) {
+         //LLAMA_LOG_DEBUG("%s: reusing previous graph\n", __func__);
+ 
+         // with pipeline parallelism, the previous graph_compute_async may still be running
+@@ -1376,6 +1396,15 @@ llm_graph_result * llama_context::process_ubatch(const llama_ubatch & ubatch, ll
+             return nullptr;
+         }
+ 
++        if (xdna) {
++            for (int i = 0; i < ggml_graph_n_nodes(gf); ++i) {
++                auto * node = ggml_graph_node(gf, i);
++                if (ggml_backend_supports_op(xdna, node)) {
++                    ggml_backend_sched_set_tensor_backend(sched.get(), node, xdna);
++                }
++            }
++        }
++
+         if (!ggml_backend_sched_alloc_graph(sched.get(), gf)) {
+             LLAMA_LOG_ERROR("%s: failed to allocate graph\n", __func__);
+             ret = GGML_STATUS_ALLOC_FAILED;
+@@ -3902,6 +3931,10 @@ void llama_set_nextn_layer_offset(llama_context * ctx, int32_t offset) {
+     ctx->set_nextn_layer_offset(offset);
+ }
+ 
++void llama_set_hybrid_phase(struct llama_context * ctx, uint32_t phase) {
++    ctx->set_hybrid_phase(phase);
++}
++
+ llama_memory_t llama_get_memory(const struct llama_context * ctx) {
+     if (!ctx) {
+         return nullptr;
+diff --git a/src/llama-context.h b/src/llama-context.h
+index bf91daa..3a0d098 100644
+--- a/src/llama-context.h
++++ b/src/llama-context.h
+@@ -40,6 +40,7 @@ struct llama_memory_buffer {
+ using llama_memory_buffers = std::map<ggml_backend_buffer_type_t, llama_memory_buffer>;
+ 
+ struct llama_context {
++    void set_hybrid_phase(uint32_t phase) { hybrid_phase = phase <= 4 ? phase : 3; }
+     // init scheduler and compute buffers, reserve worst-case graphs
+     llama_context(
+             const llama_model & model,
+@@ -376,6 +377,8 @@ private:
+     bool has_evaluated_once = false;
+ 
+     // env: LLAMA_GRAPH_REUSE_DISABLE
++    uint32_t hybrid_phase = 0;
++    uint64_t hybrid_plan_epoch = UINT64_MAX;
+     bool graph_reuse_disable = false;
+ 
+     // perf
+diff --git a/tools/server/server-context.cpp b/tools/server/server-context.cpp
+index b6835e4..b33efb7 100644
+--- a/tools/server/server-context.cpp
++++ b/tools/server/server-context.cpp
+@@ -11,6 +11,7 @@
+ #include "common.h"
+ #include "fit.h"
+ #include "llama.h"
++#include "ggml-backend.h"
+ #include "log.h"
+ #include "sampling.h"
+ #include "speculative.h"
+@@ -3679,6 +3680,13 @@ private:
+         // note: the sync is done here too, so that the wait is also covered by the yield
+         int ret = 0;
+         queue_tasks.yield_to_queue([&]() {
++            bool has_prompt = false, has_decode = false;
++            for (int i = off; i < off + batch_view.n_tokens; ++i) {
++                has_prompt |= batch.tokens[i].is_prompt;
++                has_decode |= !batch.tokens[i].is_prompt;
++            }
++            const uint32_t phase = spec ? 4 : has_prompt && has_decode ? 3 : has_prompt ? 1 : 2;
++            llama_set_hybrid_phase(ctx_tgt, phase);
+             ret = llama_decode(ctx_tgt, batch_view);
+             if (ret == 0 && has_output) {
+                 llama_synchronize(ctx_tgt);
+@@ -3700,6 +3708,7 @@ private:
+                 }
+ 
+                 if (ret < -1) {
++                    llama_synchronize(ctx_tgt);
+                     // TODO: update slot state based on llama_memory_seq_pos_min() and llama_memory_seq_pos_max()
+                     err = "Compute error.";
+                 }
+@@ -4804,12 +4813,20 @@ void server_routes::init_routes() {
+     this->get_props = [this](const server_http_req &) {
+         auto res = create_response(true);
+         // note: do NOT use ctx_server here, this endpoint must be accessible during sleep
++        json props;
+         if (queue_tasks.is_sleeping()) {
+             std::unique_lock<std::mutex> lock(mutex_cache);
+-            res->ok(cached_props);
++            props = cached_props;
+         } else {
+-            res->ok(get_res_props(*meta, params, false));
++            props = get_res_props(*meta, params, false);
++        }
++        if (auto * reg = ggml_backend_reg_by_name("XDNA")) {
++            using stats_fn = const char * (*)();
++            auto stats = reinterpret_cast<stats_fn>(ggml_backend_reg_get_proc_address(reg,
++                "ggml_backend_xdna_stats_json_v1"));
++            if (stats) props["hybrid"] = json::parse(stats());
+         }
++        res->ok(props);
+         return res;
+     };
+ 

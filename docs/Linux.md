@@ -4,8 +4,9 @@
 
 Target: Ryzen AI 9 HX 370, Radeon 890M and XDNA2 on Linux. This fork ports the
 upstream C++ backend rather than maintaining a second llama.cpp implementation.
-The plugin, llama.cpp binaries and matching GGML headers use release b10944.
-The download script checks the binary archive SHA-256 and source commit.
+Linux builds llama.cpp b10944 from pinned source with the versioned hybrid
+scheduler patch. The plugin uses matching GGML headers. The manifest records
+source, patch and kernel hashes. Windows retains its upstream binary workflow.
 
 The NPU takes supported weight GEMMs and adjacent operations for batches of
 at least 1,024 tokens. Vulkan owns model weights, attention and persistent
@@ -31,7 +32,7 @@ docker run --rm --name hybrid-test \
   --memory 24g --cpus 20 --shm-size 2g \
   -p 127.0.0.1:8080:8080 \
   -v /host/models:/models:ro \
-  ghcr.io/nulifyer/llama-xdna-hybrid:linux-v0.1.0 \
+  ghcr.io/nulifyer/llama-xdna-hybrid:linux-v0.2.0 \
   --model /models/model.gguf --ctx-size 32768 --parallel 1
 ```
 
@@ -69,7 +70,7 @@ responsibility.
 On Ubuntu 26.04, install the builder dependencies listed in Dockerfile, then:
 
 ```bash
-tools/fetch-llama.sh
+tools/build-llama.sh
 cmake -S . -B build-linux -DCMAKE_BUILD_TYPE=Release -DGGML_XDNA_NPU=ON
 cmake --build build-linux -j4
 ctest --test-dir build-linux -L 'host|nodriver' --output-on-failure
@@ -94,16 +95,26 @@ The homelab's earlier FLM versus GPU timings do not predict this backend's gain.
 The default NPU copy budget is 20 GB and is bounded by available host/container
 memory. There is an additional GPU copy of the model and cache. Keep the budget
 conservative until the Linux driver allocation limits have been measured.
-An explicit `GGML_XDNA_MAX_COPY_GB` overrides that automatic budget. The device's
+`GGML_XDNA_MAX_COPY_GB` requests a different budget, but it remains capped by
+available host/container memory minus a reserve of at least 4 GiB. The device's
 advertised Vulkan memory is not the container limit. Measure host RAM, container
 memory and device use together. Enable llama-server `--metrics` for its request
 metrics; Docker resource statistics do not attribute every allocation by device.
 
-Upstream failure handling may finish an already scheduled piece on a slow CPU
-reference before moving later work to Vulkan. This can cause a long request
-delay. The launcher checks startup readiness; it does not fix that mid-request
-behavior. Do not advertise production recovery guarantees until it is tested
-and improved. GPU attention can also limit long-context speedups.
+The hybrid launcher enables explicit batch phases and strict failure handling.
+Prompt batches may use the NPU; decode, mixed batches and speculative verification
+use the GPU. A phase or failure-epoch change invalidates cached graph placement.
+The existing llama context owns attention and recurrent state across the switch.
+A failed NPU request returns a compute error and clears affected server slots.
+The NPU is then disabled until process restart. Unresolved 60-second kernel waits
+exit the process instead of releasing buffers that may still be in use. Genuine
+driver hangs need separate testing. GPU attention limits long-context speedups.
+
+Authenticated `GET /props` includes a `hybrid` object with placement counts, NPU
+pieces, claimed matmul nodes, staging bytes/times and the copy budget. These are
+process-wide counters, not power measurements or per-device total memory.
+`hybrid-manifest.json` declares the operator coverage. Attention and recurrent
+kernels remain on GPU; this release does not implement full NPU prefill.
 
 ## HX 370 verification
 

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "hardware": {"npu": "XDNA2", "gpu": "Vulkan", "validated_device": "Ryzen AI 9 HX 370"},
+  "interface_version": 1,
+  "coverage": "partial_prefill",
+  "state_owner": "llama_gpu",
+  "full_npu_prefill": false,
+  "npu_operators": ["weight_matmul", "fused_gate_up_silu"],
+  "gpu_operators": ["attention", "convolution", "gated_delta_recurrence", "decode"],
+  "host_stages": ["packing", "adjacent_region_operations", "staging"],
+  "execution_policy": {"minimum_prompt_rows": 1024, "mixed_batches": "gpu", "verification": "gpu"},
+  "kernel": {"file": "bfp16_gemm.xclbin", "sha256": "365d62e6ba52c26d3dd55d27129f0c122d42fee655c2467472522d3dbadd9fe7"},
+  "llama": {"tag": "b10944", "commit": "b6b003d2cb29647d968302eb2db8da6f66303b3e"},
+  "runtime": {"xrt_package_version": "1:2.21.75+dfsg-4", "serving_language": "C++"}
+}

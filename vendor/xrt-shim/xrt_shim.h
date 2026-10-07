@@ -92,6 +92,8 @@ int xrtsh_runlist_add(xrtsh_runlist rl, xrtsh_run r);
 int xrtsh_runlist_execute(xrtsh_runlist rl);
 /* Returns 0 on success, <0 on exception (timeout / device error). */
 int xrtsh_runlist_wait(xrtsh_runlist rl);
+/* Returns 0 completed, 1 timed out, <0 exception. A timeout can leave device writes pending. */
+int xrtsh_runlist_wait_ms(xrtsh_runlist rl, unsigned timeout_ms);
 void xrtsh_runlist_free(xrtsh_runlist rl);
 
 #ifdef __cplusplus

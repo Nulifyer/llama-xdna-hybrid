@@ -3,12 +3,12 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG XRT_VERSION=1:2.21.75+dfsg-4
 ARG SOURCE_REVISION=unknown
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl git cmake make g++ uuid-dev libxrt-dev=${XRT_VERSION} \
+    ca-certificates curl git cmake make g++ jq libvulkan-dev glslc uuid-dev libxrt-dev=${XRT_VERSION} \
     libvulkan1 mesa-vulkan-drivers libssl3t64 libbrotli1 libzstd1 zlib1g \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY . .
-RUN tools/fetch-llama.sh && \
+RUN tools/build-llama.sh && \
     cmake -S . -B build-linux -DCMAKE_BUILD_TYPE=Release -DGGML_XDNA_NPU=ON && \
     cmake --build build-linux -j4 && \
     VK_DRIVER_FILES="$(find /usr/share/vulkan/icd.d -name '*lvp*.json' -print -quit)" \

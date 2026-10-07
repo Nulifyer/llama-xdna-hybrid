@@ -1,13 +1,18 @@
-Experimental Linux XDNA2 + Vulkan backend for the same model.
+Experimental Linux XDNA2 + Vulkan execution for one GGUF model.
 
-The image contains pinned llama.cpp b10944, the XDNA plugin and its BFP16
-kernel. It runs eligible prefill operations on the NPU and keeps attention,
-the KV cache and token decoding on Vulkan. Small batches use Vulkan.
+Linux now builds pinned llama.cpp b10944 from source with explicit prompt/decode
+phase propagation and placement-aware graph reuse. Eligible prompt matmuls use
+XDNA2; attention, recurrent state and token decoding remain on Vulkan. Mixed
+batches and speculative verification use GPU. This is partial NPU prefill.
 
-GitHub CI checks compilation and host-reference tests. It cannot validate an
-NPU. Consult docs/Linux.md and the recorded hardware results before deployment.
-The server refuses hybrid startup unless the NPU kernel self-test passes.
+The native C++ OpenAI-compatible server exposes authenticated hybrid counters
+through /props, caps NPU copies to available memory, and rejects affected
+requests on NPU errors. A timed-out kernel wait exits the process. No Python
+serving or FLM state conversion is used. See hybrid-manifest.json for coverage.
 
-The archive needs Ubuntu 26.04 userspace, XRT and Vulkan libraries. Prefer the
-container. Images are published to ghcr.io/nulifyer/llama-xdna-hybrid using the
-release tag. No stable/latest tag is published at this stage.
+GitHub CI verifies builds and host tests. Hardware evidence is attached after
+HX370 verification. CI alone does not establish NPU correctness or performance.
+The launcher requires a successful kernel self-test before hybrid startup.
+
+Use the checksummed archive on Ubuntu 26.04 with XRT/Vulkan, or the matching
+GHCR release image. No stable/latest tag is published.

@@ -58,3 +58,8 @@ set_tests_properties(memory-budget-host PROPERTIES LABELS host ENVIRONMENT "${XD
 set_tests_properties(memory-budget-npu PROPERTIES LABELS npu ENVIRONMENT "${XDNA_ENV};GGML_XDNA_MAX_COPY_GB=0.05;GGML_XDNA_HOST_ONLY=")
 set_tests_properties(insts-gen bfp16-pack safe-start PROPERTIES LABELS host ENVIRONMENT "${XDNA_ENV}")
 set_tests_properties(safe-start-no-driver PROPERTIES LABELS nodriver ENVIRONMENT "${XDNA_ENV}")
+
+add_executable(test-plan tests/test-plan.cpp)
+target_include_directories(test-plan PRIVATE src)
+add_test(NAME hybrid-plan COMMAND test-plan)
+set_tests_properties(hybrid-plan PROPERTIES LABELS host)

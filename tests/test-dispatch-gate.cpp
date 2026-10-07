@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <initializer_list>
 
 static int failures = 0;
 
@@ -133,6 +134,29 @@ int main() {
     // offload_op is deliberately absent: that path copies the weight per op.
     check(!ggml_backend_dev_offload_op(dev, make_mul_mat(ctx, GGML_TYPE_Q4_K, k, n, 2048)),
           "offload_op never claims an op (no per-op weight copies)");
+
+    // Exercise the same extension that the patched llama scheduler calls.
+    auto reg = ggml_backend_dev_backend_reg(dev);
+    using phase_fn = uint64_t (*)(ggml_backend_t, uint32_t);
+    using stats_fn = const char * (*)();
+    auto phase = reinterpret_cast<phase_fn>(ggml_backend_reg_get_proc_address(reg, "ggml_backend_xdna_set_phase_v1"));
+    auto stats = reinterpret_cast<stats_fn>(ggml_backend_reg_get_proc_address(reg, "ggml_backend_xdna_stats_json_v1"));
+    check(phase && stats, "versioned scheduler and metrics interface is available");
+    if (phase && stats) {
+        auto large = make_mul_mat(ctx, GGML_TYPE_Q4_K, k, n, 2048);
+        uint64_t prefill = phase(nullptr, 1);
+        check(ggml_backend_dev_supports_op(dev, large), "explicit prefill accepts an eligible weight matmul");
+        check(phase(nullptr, 1) == prefill, "unchanged placement can reuse its graph");
+        for (uint32_t p : {2u, 3u, 4u, 99u}) {
+            check(phase(nullptr, p) != prefill, "decode, mixed, verification or invalid phase invalidates prefill placement");
+            check(!ggml_backend_dev_supports_op(dev, large), "large non-prefill batch stays on GPU");
+        }
+        phase(nullptr, 1);
+        check(!ggml_backend_dev_supports_op(dev, make_mul_mat(ctx, GGML_TYPE_Q4_K, k, n, 13)),
+              "short prompt tail stays on GPU");
+        check(strstr(stats(), "\"full_npu_prefill\":false") != nullptr, "metrics declare actual partial-prefill coverage");
+        phase(nullptr, 0);
+    }
 
     ggml_free(ctx);
 

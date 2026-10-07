@@ -21,6 +21,8 @@
 // fast.
 
 #include "ggml-xdna.h"
+#include "xdna-plan.h"
+#include <sstream>
 #include "ggml-backend-impl.h"
 #include "ggml-impl.h"
 
@@ -118,16 +120,24 @@ static xdna_mode xdna_run_mode() {
     return m;
 }
 
-// Set when the NPU fails during a prompt. The piece that failed is finished
-// on the CPU, and from then on the backend claims nothing, so everything goes
-// to the GPU. Never set in host-only mode.
+// A failed NPU is disabled for this process. Strict serving rejects the
+// affected request; legacy reference tests may finish its piece on the CPU.
+// Placement epochs force the next request to rebuild its graph for Vulkan.
 static std::atomic<bool> g_npu_broken{ false };
+static thread_local uint32_t g_phase = xdna_plan::automatic;
+static std::atomic<uint64_t> g_prefill_plans{0}, g_decode_plans{0}, g_mixed_plans{0};
+static std::atomic<uint64_t> g_npu_pieces{0}, g_npu_matmul_nodes{0}, g_failures{0}, g_phase_epoch{0};
+static std::atomic<uint64_t> g_read_bytes{0}, g_write_bytes{0}, g_read_us{0}, g_write_us{0};
+static bool xdna_fail_closed() { return env_int("GGML_XDNA_FAIL_CLOSED", 0) != 0; }
+
 
 static void xdna_npu_failed(const std::string & err) {
-    if (!g_npu_broken.exchange(true))
-        GGML_LOG_ERROR("xdna: the NPU failed (%s); finishing this step on the CPU and handing everything to the GPU "
-                       "from now on\n",
-                       err.c_str());
+    if (!g_npu_broken.exchange(true)) {
+        ++g_failures;
+        ++g_phase_epoch;
+        GGML_LOG_ERROR("xdna: the NPU failed (%s); NPU disabled for this process (fail_closed=%d)\n",
+                       err.c_str(), xdna_fail_closed());
+    }
 }
 
 //
@@ -494,7 +504,11 @@ static bool xdna_budget_takes(const ggml_tensor * w) {
         const char * s = xdna_env("GGML_XDNA_MAX_COPY_GB");
         b.overridden = s != nullptr;
         b.capped = !s && b.free - b.kept_back > xdna_budget::DEFAULT_MAX;
-        b.limit = s ? atof(s) * GB : std::min(b.free - b.kept_back, xdna_budget::DEFAULT_MAX);
+        char * end = nullptr;
+        const double requested = s ? strtod(s, &end) * GB : xdna_budget::DEFAULT_MAX;
+        if (s && (end == s || *end != '\0')) GGML_ABORT("invalid GGML_XDNA_MAX_COPY_GB");
+        try { b.limit = xdna_plan::copy_budget(b.free, (double) m.total, requested); }
+        catch (const std::exception &) { GGML_ABORT("invalid GGML_XDNA_MAX_COPY_GB"); }
     }
     const xdna_budget::entry e = { xdna_layer_of(w), xdna_copy_bytes(w->ne[0], w->ne[1]) };
     if (!b.cut && b.taken + e.bytes <= b.limit) {
@@ -664,7 +678,8 @@ static bool xdna_mul_mat(xdna_context & ctx, ggml_tensor * node) {
             ctx.write_ms += since(t0);
             return true;
         }
-        xdna_npu_failed(std::string(node->name) + ": " + err);  // and on to the reference below
+        xdna_npu_failed(std::string(node->name) + ": " + err);
+        if (xdna_fail_closed()) return false;
     }
 #endif
     const std::vector<uint8_t> & w = ctx.weight(src0);
@@ -766,12 +781,18 @@ static ggml_status ggml_backend_xdna_graph_compute(ggml_backend_t backend, ggml_
         io.read = [&](const ggml_tensor * t, void * dst) {
             const auto t0 = std::chrono::steady_clock::now();
             ctx.read(t, dst);
-            ctx.read_ms += since(t0);
+            const double elapsed = since(t0);
+            ctx.read_ms += elapsed;
+            g_read_us += (uint64_t) (elapsed * 1000);
+            g_read_bytes += ggml_nbytes(t);
         };
         io.write = [&](ggml_tensor * t, const void * src) {
             const auto t0 = std::chrono::steady_clock::now();
             ggml_backend_tensor_set(t, src, 0, ggml_nbytes(t));
-            ctx.write_ms += since(t0);
+            const double elapsed = since(t0);
+            ctx.write_ms += elapsed;
+            g_write_us += (uint64_t) (elapsed * 1000);
+            g_write_bytes += ggml_nbytes(t);
         };
         io.param = [&](const ggml_tensor * t) { return ctx.param(t); };
         io.alloc = [&](size_t n) { return ctx.pool_alloc(n); };
@@ -808,7 +829,14 @@ static ggml_status ggml_backend_xdna_graph_compute(ggml_backend_t backend, ggml_
         if (npu) {
             ok = xdna_exec_piece(cgraph, npu, npu->pool(), io, xdna_streams(), err);
             ctx.pool_release();
-            if (!ok) xdna_npu_failed(err);
+            if (!ok) {
+                xdna_npu_failed(err);
+                if (xdna_fail_closed()) return GGML_STATUS_FAILED;
+            } else {
+                ++g_npu_pieces;
+                for (int i = 0; i < cgraph->n_nodes; ++i)
+                    g_npu_matmul_nodes += cgraph->nodes[i]->op == GGML_OP_MUL_MAT;
+            }
         }
         if (!ok) {
             // a failed piece wrote nothing back; run it again on the host
@@ -1084,7 +1112,7 @@ static bool ggml_backend_xdna_device_supports_op(ggml_backend_dev_t dev, const g
 
 static bool xdna_claim_mul_mat(const ggml_tensor * op) {
     const ggml_tensor * src0 = op->src[0], * src1 = op->src[1];
-    if (xdna_op_batch_size(op) < xdna_min_batch()) return false;
+    if (!xdna_plan::eligible(g_phase, xdna_op_batch_size(op), xdna_min_batch())) return false;
     if (!xdna_is_weight(src0)) return false;
     if (op->type != GGML_TYPE_F32 || src1->type != GGML_TYPE_F32) return false;
     if (!ggml_is_contiguous(src1) || src1->ne[2] != 1 || src1->ne[3] != 1) return false;
@@ -1107,7 +1135,9 @@ static bool xdna_claim_mul_mat(const ggml_tensor * op) {
 // down -> add) without pulling in unrelated work, which would split Vulkan's
 // graph into pieces for nothing.
 static bool xdna_supports_op_policy(const ggml_tensor * op, int depth) {
-    if (!xdna_vulkan().dev || g_npu_broken) return false;
+    if ((env_int("GGML_XDNA_EXPLICIT_PHASE", 0) && g_phase == xdna_plan::automatic) ||
+        !xdna_vulkan().dev || g_npu_broken ||
+        (g_phase != xdna_plan::automatic && g_phase != xdna_plan::prefill)) return false;
     if (op->op == GGML_OP_MUL_MAT) return xdna_claim_mul_mat(op);
 #ifdef XDNA_HAVE_NPU
     if (!xdna_blocks() || depth > 8) return false;
@@ -1203,11 +1233,50 @@ static size_t ggml_backend_xdna_reg_device_count(ggml_backend_reg_t reg) {
 
 static ggml_backend_dev_t ggml_backend_xdna_reg_device_get(ggml_backend_reg_t reg, size_t index);
 
+static uint64_t xdna_set_phase(ggml_backend_t backend, uint32_t phase) {
+    GGML_UNUSED(backend);
+    g_phase = phase <= xdna_plan::verify ? phase : xdna_plan::mixed;
+    if (phase == xdna_plan::prefill) ++g_prefill_plans;
+    else if (phase == xdna_plan::decode) ++g_decode_plans;
+    else ++g_mixed_plans;
+    return (g_phase_epoch.load() << 8) | g_phase;
+}
+
+static const char * xdna_stats_json() {
+    static thread_local std::string result;
+    std::lock_guard<std::mutex> lk(g_budget.mu);
+    std::ostringstream out;
+    out << "{\"interface_version\":1,\"coverage\":\"partial_prefill\","
+        << "\"state_owner\":\"llama_gpu\",\"full_npu_prefill\":false,"
+        << "\"npu_disabled\":" << (g_npu_broken ? "true" : "false")
+        << ",\"prefill_plans\":" << g_prefill_plans.load()
+        << ",\"decode_plans\":" << g_decode_plans.load()
+        << ",\"mixed_or_verify_plans\":" << g_mixed_plans.load()
+        << ",\"npu_pieces\":" << g_npu_pieces.load()
+        << ",\"npu_matmul_nodes\":" << g_npu_matmul_nodes.load()
+        << ",\"failures\":" << g_failures.load()
+        << ",\"input_transfer_bytes\":" << g_read_bytes.load()
+        << ",\"output_transfer_bytes\":" << g_write_bytes.load()
+        << ",\"input_transfer_ms\":" << g_read_us.load() / 1000.0
+        << ",\"output_transfer_ms\":" << g_write_us.load() / 1000.0
+        << ",\"npu_copy_budget_bytes\":" << (uint64_t) std::max(0.0, g_budget.limit)
+        << ",\"npu_planned_weight_bytes\":" << (uint64_t) g_budget.taken << "}";
+    result = out.str();
+    return result.c_str();
+}
+
+static void * xdna_proc_address(ggml_backend_reg_t reg, const char * name) {
+    GGML_UNUSED(reg);
+    if (strcmp(name, "ggml_backend_xdna_set_phase_v1") == 0) return (void *) xdna_set_phase;
+    if (strcmp(name, "ggml_backend_xdna_stats_json_v1") == 0) return (void *) xdna_stats_json;
+    return nullptr;
+}
+
 static const ggml_backend_reg_i ggml_backend_xdna_reg_i = {
     /* .get_name         = */ ggml_backend_xdna_reg_get_name,
     /* .get_device_count = */ ggml_backend_xdna_reg_device_count,
     /* .get_device       = */ ggml_backend_xdna_reg_device_get,
-    /* .get_proc_address = */ NULL,
+    /* .get_proc_address = */ xdna_proc_address,
 };
 
 ggml_backend_reg_t ggml_backend_xdna_reg(void) {

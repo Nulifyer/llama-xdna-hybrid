@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
 #include <fstream>
 #include <immintrin.h>
 
@@ -295,12 +296,21 @@ bool npu_bfp16::batch::wait(std::string & err, double * ms) {
     in_flight_ = false;
     bool ok;
     if (rl_) {
-        ok = xrtsh_runlist_wait(rl_) >= 0;
+        const int status = xrtsh_runlist_wait_ms(rl_, 60000);
+        if (status == 1) {
+            std::fprintf(stderr, "xdna: NPU runlist timed out; exiting without reusing live buffers\n");
+            std::_Exit(70);
+        }
+        ok = status == 0;
         if (!ok) err = shim_error("runlist");
         xrtsh_runlist_free(rl_);
         rl_ = nullptr;
     } else {
-        const int state = xrtsh_run_wait(calls_[0].run);
+        const int state = xrtsh_run_wait_ms(calls_[0].run, 60000);
+        if (state == 8) {
+            std::fprintf(stderr, "xdna: NPU run timed out; exiting without reusing live buffers\n");
+            std::_Exit(70);
+        }
         ok = state == 4;
         if (!ok) err = "the kernel did not complete (state " + std::to_string(state) + "): " + xrtsh_last_error();
     }

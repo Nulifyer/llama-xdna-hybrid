@@ -291,6 +291,12 @@ int xrtsh_runlist_wait(xrtsh_runlist rl) {
     })
 }
 
+int xrtsh_runlist_wait_ms(xrtsh_runlist rl, unsigned timeout_ms) {
+    GUARD_INT({
+        return static_cast<ShimRunlist *>(rl)->rl.wait(std::chrono::milliseconds(timeout_ms)) == std::cv_status::timeout ? 1 : 0;
+    })
+}
+
 void xrtsh_runlist_free(xrtsh_runlist rl) { delete static_cast<ShimRunlist *>(rl); }
 
 } // extern "C"
