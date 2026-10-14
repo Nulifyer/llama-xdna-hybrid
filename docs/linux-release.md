@@ -16,3 +16,8 @@ The launcher requires a successful kernel self-test before hybrid startup.
 
 Use the checksummed archive on Ubuntu 26.04 with XRT/Vulkan, or the matching
 GHCR release image. No stable/latest tag is published.
+
+Mellum/MoE routing now retains original router-logit precision on Vulkan. A
+configurable output-width floor avoids narrow NPU projections when measurements
+favor Vulkan. Native counters also cover matrix-only execution, and expose the
+resolved placement controls. Q6 numerical fixtures cover Mellum attention shapes.

@@ -83,6 +83,11 @@ static int64_t xdna_min_mflop() {
     return v;
 }
 
+static int64_t xdna_min_output_width() {
+    static const int64_t v = env_int("GGML_XDNA_MIN_OUTPUT_WIDTH", 0);
+    return v;
+}
+
 static int xdna_n_threads() {
     static int v = (int) env_int("GGML_XDNA_N_THREADS", [] {
         const unsigned hc = std::thread::hardware_concurrency();
@@ -559,14 +564,8 @@ static void xdna_budget_report() {
 // If the user asked for the NPU, the NPU runs the model. A model the NPU
 // handles badly gets a warning, never a refusal. Two so far:
 //
-//   mixture of experts   The expert step is a MUL_MAT_ID, which we don't
-//                        take, so only the attention and shared weights are
-//                        left for us. In the sweep these models' answers also
-//                        drifted further from the GPU's than any dense
-//                        model's (LFM2.5 8B-A1B 0.020, gpt-oss-20b 0.037,
-//                        against a 0.01 bar), most likely because rounding
-//                        each layer's router multiply to 8 bits flips which
-//                        experts a token uses.
+//   mixture of experts   Routed experts and their router logits stay on
+//                        Vulkan. Only eligible ordinary projections move.
 //   a narrow model       Below a width of 2,048 the GPU alone was faster in
 //                        every test (0.34-0.84x). 2,048 ties.
 //
@@ -615,9 +614,8 @@ static void xdna_note_model(const ggml_tensor * op) {
 static void xdna_say_notes() {
     if (g_notes.said.exchange(true)) return;
     if (g_notes.moe.load())
-        GGML_LOG_WARN("xdna: mixture-of-experts model: the NPU cannot take the expert step, so it gets only part of "
-                      "the work, and in our tests these models' answers drifted further from the GPU's than any dense "
-                      "model's. Running it on the NPU as asked; -dev Vulkan0 would use the GPU alone\n");
+        GGML_LOG_WARN("xdna: mixture-of-experts model: routed experts and router logits stay on Vulkan; "
+                      "the NPU takes eligible ordinary prefill matrices. -dev Vulkan0 would use the GPU alone\n");
     const int64_t width = g_notes.width.load();
     if (width != 0 && width < XDNA_NARROW_WIDTH)
         GGML_LOG_WARN("xdna: narrow model (width %lld): the GPU alone was faster than the NPU on every model this "
@@ -640,7 +638,7 @@ static void ggml_backend_xdna_free(ggml_backend_t backend) {
     }
 }
 
-static bool xdna_mul_mat(xdna_context & ctx, ggml_tensor * node) {
+static bool xdna_mul_mat(xdna_context & ctx, ggml_tensor * node, bool & used_npu) {
     const ggml_tensor * src0 = node->src[0], * src1 = node->src[1];
     void * x = ctx.pinned(ggml_nbytes(src1));
     if (!x) {
@@ -652,7 +650,10 @@ static bool xdna_mul_mat(xdna_context & ctx, ggml_tensor * node) {
         return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t).count();
     };
     ctx.read(src1, x);
-    ctx.read_ms += since(t0);
+    const double read_ms = since(t0);
+    ctx.read_ms += read_ms;
+    g_read_us += (uint64_t) (read_ms * 1000);
+    g_read_bytes += ggml_nbytes(src1);
     ctx.out.resize(ggml_nbytes(node));
     ctx.matmuls++;
 
@@ -675,7 +676,12 @@ static bool xdna_mul_mat(xdna_context & ctx, ggml_tensor * node) {
         if (ok) {
             t0 = std::chrono::steady_clock::now();
             ggml_backend_tensor_set(node, ctx.out.data(), 0, ggml_nbytes(node));
-            ctx.write_ms += since(t0);
+            const double write_ms = since(t0);
+            ctx.write_ms += write_ms;
+            g_write_us += (uint64_t) (write_ms * 1000);
+            g_write_bytes += ggml_nbytes(node);
+            ++g_npu_matmul_nodes;
+            used_npu = true;
             return true;
         }
         xdna_npu_failed(std::string(node->name) + ": " + err);
@@ -692,6 +698,7 @@ static bool xdna_mul_mat(xdna_context & ctx, ggml_tensor * node) {
     xdna_ref_mul_mat(&s0, &s1, &d, xdna_n_threads());
 
     ggml_backend_tensor_set(node, ctx.out.data(), 0, ggml_nbytes(node));
+    GGML_UNUSED(used_npu);
     return true;
 }
 
@@ -851,6 +858,7 @@ static ggml_status ggml_backend_xdna_graph_compute(ggml_backend_t backend, ggml_
     }
 #endif
 
+    bool used_npu = false;
     for (int i = 0; i < cgraph->n_nodes; i++) {
         ggml_tensor * node = cgraph->nodes[i];
         switch (node->op) {
@@ -861,13 +869,14 @@ static ggml_status ggml_backend_xdna_graph_compute(ggml_backend_t backend, ggml_
             case GGML_OP_TRANSPOSE:
                 break;
             case GGML_OP_MUL_MAT:
-                if (!xdna_mul_mat(ctx, node)) return GGML_STATUS_FAILED;
+                if (!xdna_mul_mat(ctx, node, used_npu)) return GGML_STATUS_FAILED;
                 break;
             default:
                 GGML_LOG_ERROR("%s: unsupported op %s\n", __func__, ggml_op_name(node->op));
                 return GGML_STATUS_FAILED;
         }
     }
+    if (used_npu) ++g_npu_pieces;
     return GGML_STATUS_SUCCESS;
 }
 
@@ -1114,6 +1123,10 @@ static bool xdna_claim_mul_mat(const ggml_tensor * op) {
     const ggml_tensor * src0 = op->src[0], * src1 = op->src[1];
     if (!xdna_plan::eligible(g_phase, xdna_op_batch_size(op), xdna_min_batch())) return false;
     if (!xdna_is_weight(src0)) return false;
+    // Router logits decide which expert weights run. Preserve their original
+    // precision instead of rounding them into the NPU's BFP16 weight format.
+    if (xdna_name_in_layer(src0->name, "ffn_gate_inp.weight")) return false;
+    if (src0->ne[1] < xdna_min_output_width()) return false;
     if (op->type != GGML_TYPE_F32 || src1->type != GGML_TYPE_F32) return false;
     if (!ggml_is_contiguous(src1) || src1->ne[2] != 1 || src1->ne[3] != 1) return false;
     if (src0->ne[0] != src1->ne[0]) return false;
@@ -1250,6 +1263,10 @@ static const char * xdna_stats_json() {
     out << "{\"interface_version\":1,\"coverage\":\"partial_prefill\","
         << "\"state_owner\":\"llama_gpu\",\"full_npu_prefill\":false,"
         << "\"npu_disabled\":" << (g_npu_broken ? "true" : "false")
+        << ",\"minimum_output_width\":" << xdna_min_output_width()
+        << ",\"minimum_prompt_rows\":" << xdna_min_batch()
+        << ",\"host_threads\":" << xdna_n_threads()
+        << ",\"block_claiming\":" << (xdna_blocks() ? "true" : "false")
         << ",\"prefill_plans\":" << g_prefill_plans.load()
         << ",\"decode_plans\":" << g_decode_plans.load()
         << ",\"automatic_plans\":" << g_automatic_plans.load()

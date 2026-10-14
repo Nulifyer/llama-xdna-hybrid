@@ -335,20 +335,12 @@ contexts of 32,768 tokens, and two models served at once by its router.
   GPU: the answer stays right, but the rest of that prompt runs on the CPU.
   On a big model that takes many minutes (22 instead of 1 for Qwen3.8-27B
   in our test). Later prompts run on the GPU at its usual speed.
-- **Mixture-of-experts models are a poor fit.** The NPU can't run the expert
-  step, so only the attention and shared weights move to it. Their answers
-  also drifted further from the GPU's than any dense model's in our tests
-  (LFM2.5 8B-A1B and gpt-oss-20b reached a KL of 0.020 and 0.037 against the
-  0.01 we hold dense models to), most likely because rounding each layer's
-  router multiply to 8 bits changes which experts a token uses. The add-on
-  runs them anyway and says this once on the first prompt:
-
-  ```
-  xdna: mixture-of-experts model: the NPU cannot take the expert step, so it
-  gets only part of the work, and in our tests these models' answers drifted
-  further from the GPU's than any dense model's. Running it on the NPU as
-  asked; -dev Vulkan0 would use the GPU alone
-  ```
+- **Mixture-of-experts coverage is partial.** Routed expert operations and
+  `blk.<layer>.ffn_gate_inp.weight` router logits remain on Vulkan. Eligible
+  ordinary attention projections and shared FFN weights can use the NPU.
+  Router weights keep their original precision. Earlier sweep measurements
+  predate this routing policy and do not establish its output quality or speed.
+  The backend reports its partial coverage once on the first prompt.
 
 - **A few other layers stay on the GPU:** variants the NPU side doesn't
   implement yet (bias adds, some rotary settings). Output is still correct;

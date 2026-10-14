@@ -6,7 +6,7 @@
   "state_owner": "llama_gpu",
   "full_npu_prefill": false,
   "npu_operators": ["weight_matmul", "fused_gate_up_silu"],
-  "gpu_operators": ["attention", "convolution", "gated_delta_recurrence", "decode"],
+  "gpu_operators": ["attention", "expert_routing", "routed_expert_matmul", "convolution", "gated_delta_recurrence", "decode"],
   "host_stages": ["packing", "adjacent_region_operations", "staging"],
   "execution_policy": {"minimum_prompt_rows": 1024, "mixed_batches": "gpu", "verification": "gpu"},
   "kernel": {"file": "bfp16_gemm.xclbin", "sha256": "365d62e6ba52c26d3dd55d27129f0c122d42fee655c2467472522d3dbadd9fe7"},

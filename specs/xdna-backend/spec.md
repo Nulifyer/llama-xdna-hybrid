@@ -566,10 +566,11 @@ the NPU is a poor fit it shall say so once and carry on; it shall not hand the
 model back to the GPU on its own. Two cases:
 
 - **Mixture of experts.** A `MUL_MAT_ID` anywhere in the graph marks one. The
-  backend shall not claim that op, shall still claim the model's ordinary
-  matmuls, and shall warn that the NPU cannot take the expert step, that these
-  models' answers drifted further from the GPU's than any dense model's in our
-  tests, and that `-dev Vulkan0` would use the GPU alone.
+  backend shall not claim that op or router matmuls whose weight is named
+  `blk.<layer>.ffn_gate_inp.weight`. Router logits retain Vulkan precision.
+  The backend shall still claim eligible ordinary projections and shared FFN
+  matmuls. Its warning shall identify partial NPU coverage and the Vulkan-only
+  option. Historical sweep results predate this router exclusion.
 - **A narrow model.** Width under 2,048, read from the first dimension of
   `token_embd.weight` or of a layer's `attn_q.weight` / `attn_qkv.weight`. The
   backend shall warn that the GPU alone was faster on every model this size we
@@ -595,6 +596,9 @@ token uses; and models narrower than 2,048 ran at 0.34-0.84x the GPU, while
 - a `MUL_MAT_ID` (experts `[2048, 2048, 8]`, rows `[2048, 1, 2048]`, ids
   `[1, 2048]`) is not claimed
 - an ordinary q4_0 2048x2048 matmul at batch 2,048 is still claimed after that
+- Mellum's F32 2304x64 router and a wider F32 router are not claimed
+- Mellum Q6 attention shapes 2304x512, 2304x4096 and 4096x2304 remain eligible
+- an ordinary dense FFN gate remains eligible
 
 These guard the rule rather than the warning: they pass on the build before
 the warnings too, and fail if the backend is ever made to decline a

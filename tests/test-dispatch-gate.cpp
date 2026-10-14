@@ -76,6 +76,31 @@ int main() {
     check(ggml_backend_dev_supports_op(dev, make_mul_mat(ctx, GGML_TYPE_Q4_0, k, n, 2048)),
           "batch 2048, q4_0 is claimed");
 
+    {
+        ggml_tensor * router = make_mul_mat(ctx, GGML_TYPE_F32, 2304, 64, 2048);
+        ggml_set_name(router->src[0], "blk.0.ffn_gate_inp.weight");
+        check(!ggml_backend_dev_supports_op(dev, router),
+              "Mellum expert router retains Vulkan precision above the work floor");
+        ggml_tensor * wide_router = make_mul_mat(ctx, GGML_TYPE_F32, k, n, 2048);
+        ggml_set_name(wide_router->src[0], "blk.27.ffn_gate_inp.weight");
+        check(!ggml_backend_dev_supports_op(dev, wide_router),
+              "expert router exclusion also applies to wide routers");
+        ggml_tensor * gate = make_mul_mat(ctx, GGML_TYPE_Q6_K, 2304, 4096, 2048);
+        ggml_set_name(gate->src[0], "blk.0.ffn_gate.weight");
+        check(ggml_backend_dev_supports_op(dev, gate),
+              "ordinary dense FFN gates remain eligible");
+        for (auto shape : {512, 4096}) {
+            const char * setting = getenv("GGML_XDNA_MIN_OUTPUT_WIDTH");
+            const int64_t minimum = setting ? atoll(setting) : 0;
+            check(ggml_backend_dev_supports_op(dev, make_mul_mat(ctx, GGML_TYPE_Q6_K, 2304, shape, 2048)) == (shape >= minimum),
+                  "Mellum Q6 attention projection respects the configured output width");
+        }
+        check(ggml_backend_dev_supports_op(dev, make_mul_mat(ctx, GGML_TYPE_Q6_K, 2304, 1024, 2048)),
+              "projection at the tuned minimum output width remains eligible");
+        check(ggml_backend_dev_supports_op(dev, make_mul_mat(ctx, GGML_TYPE_Q6_K, 4096, 2304, 2048)),
+              "Mellum Q6 attention output is eligible with padded output width");
+    }
+
     // 2*1024*64*1024 = 134 MFLOP, under the 256 MFLOP floor
     check(!ggml_backend_dev_supports_op(dev, make_mul_mat(ctx, GGML_TYPE_Q4_K, 1024, 64, 1024)),
           "a tiny matmul is not claimed even at a large batch");

@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <random>
 #include <vector>
@@ -154,6 +155,9 @@ int main() {
         { "q4_0 1536x896 x 512 w",  GGML_TYPE_Q4_0, 1536, 896,  512, true },
         { "q8_0 1536x256 x 512 w",  GGML_TYPE_Q8_0, 1536, 256,  512, true },
         { "q4_K 1536x8960 x 520 w", GGML_TYPE_Q4_K, 1536, 8960, 520, true },
+        { "Mellum Q6 KV", GGML_TYPE_Q6_K, 2304, 512, 512, true },
+        { "Mellum Q6 Q", GGML_TYPE_Q6_K, 2304, 4096, 512, true },
+        { "Mellum Q6 output", GGML_TYPE_Q6_K, 4096, 2304, 512, true },
     };
 
     std::mt19937 rng(1234);
@@ -198,6 +202,24 @@ int main() {
         printf("%s %-22s nrmse %.2e cos %.6f   nrmse %.2e cos %.6f\n",
                ok ? "PASS" : "FAIL", c.name, ex.nrmse, ex.cos, ec.nrmse, ec.cos);
         if (!ok) failures++;
+    }
+
+    using stats_fn = const char * (*)();
+    auto stats = reinterpret_cast<stats_fn>(ggml_backend_reg_get_proc_address(
+        ggml_backend_dev_backend_reg(dev_xdna), "ggml_backend_xdna_stats_json_v1"));
+    auto count = [](const char * value, const char * field) -> uint64_t {
+        const char * start = strstr(value, field);
+        return start ? strtoull(start + strlen(field), nullptr, 10) : 0;
+    };
+    const char * host_only = getenv("GGML_XDNA_HOST_ONLY");
+    const bool npu_mode = !host_only || !*host_only || strcmp(host_only, "0") == 0;
+    if (npu_mode && !getenv("GGML_XDNA_NAN_AFTER")) {
+        const bool measured = stats && count(stats(), "\"npu_matmul_nodes\":") >= 3 &&
+            count(stats(), "\"npu_pieces\":") > 0 &&
+            count(stats(), "\"input_transfer_bytes\":") > 0 &&
+            count(stats(), "\"output_transfer_bytes\":") > 0;
+        printf("%s NPU work and staging appear in native metrics\n", measured ? "PASS" : "FAIL");
+        if (!measured) failures++;
     }
 
     ggml_backend_free(xdna);
