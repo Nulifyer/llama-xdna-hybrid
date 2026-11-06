@@ -18,4 +18,9 @@ printf 'source_revision=%s\nllama_tag=b10944\nllama_revision=b6b003d2cb29647d968
     "${SOURCE_REVISION:-unknown}" > "$out/llama-xdna-hybrid/BUILD_INFO"
 suffix=${HYBRID_PACKAGE_SUFFIX:-linux-x86_64}
 tar -czf "$out/llama-xdna-hybrid-$suffix.tar.gz" -C "$out" llama-xdna-hybrid
-(cd -- "$out" && sha256sum "llama-xdna-hybrid-$suffix.tar.gz" > SHA256SUMS)
+"$root/tools/split-release.sh" "$out/llama-xdna-hybrid-$suffix.tar.gz"
+checksum=SHA256SUMS
+[[ ${HYBRID_GPU_BACKEND:-vulkan} != rocm ]] || checksum=SHA256SUMS.rocm
+(cd -- "$out" && sha256sum llama-xdna-hybrid-"$suffix"*.tar.gz llama-xdna-hybrid-"$suffix".partcount 2>/dev/null > "$checksum") || {
+    [[ -f "$out/llama-xdna-hybrid-$suffix.tar.gz" ]] && (cd -- "$out" && sha256sum "llama-xdna-hybrid-$suffix.tar.gz" > "$checksum")
+}

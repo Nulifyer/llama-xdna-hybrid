@@ -25,6 +25,8 @@ add_custom_command(TARGET ggml-xdna POST_BUILD
 enable_testing()
 add_test(NAME linux-launcher COMMAND bash "${CMAKE_SOURCE_DIR}/tests/test-linux-launcher.sh")
 set_tests_properties(linux-launcher PROPERTIES LABELS host)
+add_test(NAME release-parts COMMAND bash "${CMAKE_SOURCE_DIR}/tests/test-release-parts.sh")
+set_tests_properties(release-parts PROPERTIES LABELS host)
 foreach(t test-mul-mat test-dispatch-gate test-memory-budget test-safe-start)
     add_executable(${t} tests/${t}.cpp)
     target_include_directories(${t} PRIVATE "${GGML_HEADERS}/include")
