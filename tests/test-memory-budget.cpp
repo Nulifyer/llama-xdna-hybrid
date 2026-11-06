@@ -11,6 +11,7 @@
 #include "ggml-backend.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <string>
 
 static int failures = 0;
@@ -24,9 +25,9 @@ int main() {
     ggml_backend_load_all();
 
     ggml_backend_dev_t dev = ggml_backend_dev_by_name("XDNA0");
-    ggml_backend_dev_t vk = ggml_backend_dev_by_name("Vulkan0");
+    ggml_backend_dev_t vk = ggml_backend_dev_by_name(std::getenv("GGML_XDNA_GPU_DEVICE") ? std::getenv("GGML_XDNA_GPU_DEVICE") : "Vulkan0");
     if (dev == NULL || vk == NULL) {
-        fprintf(stderr, "XDNA0 or Vulkan0 not registered - is GGML_BACKEND_PATH set?\n");
+        fprintf(stderr, "XDNA0 or selected GPU not registered - is GGML_BACKEND_PATH set?\n");
         return 2;
     }
 

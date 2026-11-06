@@ -42,18 +42,18 @@ int main() {
         fprintf(stderr, "XDNA0 device not registered - is GGML_BACKEND_PATH set?\n");
         return 2;
     }
-    ggml_backend_dev_t vk = ggml_backend_dev_by_name("Vulkan0");
+    ggml_backend_dev_t vk = ggml_backend_dev_by_name(std::getenv("GGML_XDNA_GPU_DEVICE") ? std::getenv("GGML_XDNA_GPU_DEVICE") : "Vulkan0");
     if (vk == NULL) {
-        fprintf(stderr, "Vulkan0 not registered - the backend works next to it\n");
+        fprintf(stderr, "Selected GPU is not registered\n");
         return 2;
     }
 
     check(ggml_backend_dev_type(dev) == GGML_BACKEND_DEVICE_TYPE_IGPU,
           "device registers as an integrated GPU (llama.cpp ranks accelerators below every GPU)");
     check(ggml_backend_dev_buffer_type(dev) == ggml_backend_dev_buffer_type(vk),
-          "its buffer type is Vulkan's (ops change hands with no copies)");
+          "its buffer type is the selected GPU's (ops change hands with no copies)");
     check(ggml_backend_dev_supports_buft(dev, ggml_backend_dev_buffer_type(vk)),
-          "it can read Vulkan's buffers");
+          "it can read the selected GPU buffers");
     ggml_backend_dev_t cpu = ggml_backend_dev_by_type(GGML_BACKEND_DEVICE_TYPE_CPU);
     check(cpu && ggml_backend_dev_supports_buft(dev, ggml_backend_dev_buffer_type(cpu)),
           "it can read host buffers (so its pieces never need copied inputs, which skip waiting for Vulkan)");
