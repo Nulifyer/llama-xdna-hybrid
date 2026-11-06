@@ -5,6 +5,18 @@ export LD_LIBRARY_PATH="$root${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export GGML_BACKEND_PATH="$root/libggml-xdna.so"
 export GGML_XDNA_FAIL_CLOSED=1
 export GGML_XDNA_EXPLICIT_PHASE=1
+hybrid_gpu_device=${HYBRID_GPU_DEVICE:-${GGML_XDNA_GPU_DEVICE:-Vulkan0}}
+if [[ ! $hybrid_gpu_device =~ ^(Vulkan|ROCm)[0-9]+$ ]]; then
+    echo 'HYBRID_GPU_DEVICE must name a Vulkan or ROCm GPU.' >&2; exit 1
+fi
+if [[ -d $root/xrt ]]; then
+    export XILINX_XRT="$root/xrt"
+    export LD_LIBRARY_PATH="$root/xrt/lib/x86_64-linux-gnu:$root/xrt/lib:$LD_LIBRARY_PATH"
+fi
+if [[ -d $root/rocm/lib ]]; then
+    export LD_LIBRARY_PATH="$root/rocm/lib:$LD_LIBRARY_PATH"
+fi
+export GGML_XDNA_GPU_DEVICE="$hybrid_gpu_device"
 case ${1:-} in
     --help|-h|--version|--list-devices) exec "$root/llama-server" "$@" ;;
 esac
@@ -21,13 +33,13 @@ if [[ ${HYBRID_REQUIRE_NPU:-1} == 1 ]]; then
     devices=$("$root/llama-server" --list-devices 2>&1) || { printf '%s\n' "$devices" >&2; exit 1; }
     printf '%s\n' "$devices" >&2
     if ! grep -qE '^[[:space:]]+XDNA0:' <<< "$devices" || \
-       ! grep -qE '^[[:space:]]+Vulkan0:' <<< "$devices"; then
-        echo 'NPU self-test or Vulkan device check failed. Hybrid serving was not started.' >&2
+       ! grep -qF "  ${hybrid_gpu_device}:" <<< "$devices"; then
+        echo 'NPU self-test or selected GPU device check failed. Hybrid serving was not started.' >&2
         exit 1
     fi
-    exec "$root/llama-server" --device XDNA0,Vulkan0 --tensor-split 0,1 \
+    exec "$root/llama-server" --device "XDNA0,$hybrid_gpu_device" --tensor-split 0,1 \
         --n-gpu-layers 99 --batch-size 2048 --ubatch-size 2048 \
         --host 0.0.0.0 --port 8080 "$@"
 fi
-exec "$root/llama-server" --device Vulkan0 --n-gpu-layers 99 \
+exec "$root/llama-server" --device "$hybrid_gpu_device" --n-gpu-layers 99 \
     --batch-size 2048 --ubatch-size 2048 --host 0.0.0.0 --port 8080 "$@"

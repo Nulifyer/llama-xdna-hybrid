@@ -60,5 +60,38 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" release/*.tar.gz release/SHA256SUMS \
-            --prerelease --title "$GITHUB_REF_NAME" --notes-file docs/linux-release.md
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" \
+            --prerelease --title "$GITHUB_REF_NAME" --notes-file docs/linux-release.md || gh release view "$GITHUB_REF_NAME"
+          gh release upload "$GITHUB_REF_NAME" release/*.tar.gz release/SHA256SUMS --clobber
+
+  rocm:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Make room for the isolated ROCm SDK
+        run: sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+      - uses: docker/setup-buildx-action@v3
+      - name: Build matched XDNA2 and ROCm bundle
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.rocm
+          target: artifacts
+          build-args: SOURCE_REVISION=${{ github.sha }}
+          outputs: type=local,dest=release-rocm
+          cache-from: type=gha,scope=rocm
+          cache-to: type=gha,scope=rocm,mode=max
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-rocm-gfx1150-x86_64
+          path: release-rocm/*
+      - name: Publish experimental ROCm bundle
+        if: startsWith(github.ref, 'refs/tags/linux-v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" \
+            --prerelease --title "$GITHUB_REF_NAME" --notes-file docs/linux-release.md || gh release view "$GITHUB_REF_NAME"
+          gh release upload "$GITHUB_REF_NAME" release-rocm/*.tar.gz --clobber

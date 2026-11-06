@@ -9,6 +9,7 @@ cat > "$tmp/llama-server" <<'SERVER'
 if [[ ${1:-} == --list-devices ]]; then
     case $TEST_DEVICES in
         both) printf 'Available devices:\n  XDNA0: NPU\n  Vulkan0: GPU\n' ;;
+        rocm) printf 'Available devices:\n  XDNA0: NPU\n  ROCm0: GPU\n' ;;
         failed) printf 'xdna: not offering XDNA0: self-test failed\nAvailable devices:\n  Vulkan0: GPU\n' ;;
         npu) printf 'Available devices:\n  XDNA0: NPU\n' ;;
     esac
@@ -21,6 +22,13 @@ export TEST_DEVICES=both HYBRID_REQUIRE_NPU=1
 unset GGML_XDNA_HOST_ONLY
 "$tmp/hybrid-server" --model example.gguf > "$tmp/args" 2> "$tmp/log"
 grep -qx 'XDNA0,Vulkan0' "$tmp/args"
+export TEST_DEVICES=rocm HYBRID_GPU_DEVICE=ROCm0
+"$tmp/hybrid-server" --model example.gguf > "$tmp/args" 2> "$tmp/log"
+grep -qx 'XDNA0,ROCm0' "$tmp/args"
+export HYBRID_GPU_DEVICE=Vulkan0
+if "$tmp/hybrid-server" --model example.gguf > /dev/null 2>&1; then
+    echo 'FAIL: explicit GPU selection silently changed backend' >&2; exit 1
+fi
 for TEST_DEVICES in failed npu; do
     export TEST_DEVICES
     if "$tmp/hybrid-server" --model example.gguf > /dev/null 2>&1; then

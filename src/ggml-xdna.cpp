@@ -52,7 +52,7 @@
 
 #include "xdna-platform.h"
 
-#define XDNA_DESCRIPTION "AMD XDNA2 NPU (prompt work, next to the Vulkan GPU)"
+#define XDNA_DESCRIPTION "AMD XDNA2 NPU (prefill, shared GPU graph)"
 
 // dst->ne[1] tokens for a plain matmul - the convention the Vulkan backend
 // uses for its offload threshold.
@@ -149,7 +149,7 @@ static void xdna_npu_failed(const std::string & err) {
 // the Vulkan device we work next to
 //
 
-struct xdna_vk {
+struct xdna_gpu {
     ggml_backend_dev_t         dev       = nullptr;
     ggml_backend_buffer_type_t buft      = nullptr;  // its device memory: ours too
     ggml_backend_buffer_type_t host_buft = nullptr;  // its pinned host memory
@@ -157,12 +157,13 @@ struct xdna_vk {
 
 // Looked up on first use rather than at registration: our DLL loads after
 // Vulkan's, but the registry is still registering us while we'd look.
-static const xdna_vk & xdna_vulkan() {
-    static xdna_vk vk;
+static const xdna_gpu & xdna_gpu_device() {
+    static xdna_gpu vk;
     static std::once_flag once;
     std::call_once(once, [] {
-        ggml_backend_dev_t d = ggml_backend_dev_by_name("Vulkan0");
-        if (!d) {
+        const char * requested = std::getenv("GGML_XDNA_GPU_DEVICE");
+        ggml_backend_dev_t d = ggml_backend_dev_by_name(requested && *requested ? requested : "Vulkan0");
+        if (!d && !(requested && *requested)) {
             for (size_t i = 0; i < ggml_backend_dev_count(); i++) {
                 ggml_backend_dev_t c = ggml_backend_dev_get(i);
                 const enum ggml_backend_dev_type t = ggml_backend_dev_type(c);
@@ -173,10 +174,13 @@ static const xdna_vk & xdna_vulkan() {
                 }
             }
         }
-        if (!d) {
-            GGML_LOG_ERROR("%s: no Vulkan device registered; " GGML_XDNA_DEVICE_NAME " works next to one\n", __func__);
+        if (!d || (ggml_backend_dev_type(d) != GGML_BACKEND_DEVICE_TYPE_GPU &&
+                   ggml_backend_dev_type(d) != GGML_BACKEND_DEVICE_TYPE_IGPU)) {
+            GGML_LOG_ERROR("%s: requested GPU %s is unavailable; XDNA requires a matching GPU backend\n",
+                           __func__, requested ? requested : "automatic");
             return;
         }
+        GGML_LOG_INFO("xdna: shared GPU buffers and transfer queue: %s\n", ggml_backend_dev_name(d));
         vk.dev = d;
         vk.buft = ggml_backend_dev_buffer_type(d);
         vk.host_buft = ggml_backend_dev_host_buffer_type(d);
@@ -348,7 +352,7 @@ struct xdna_context {
     void * pinned(size_t size) {
         if (size > pin_size) {
             if (pin) ggml_backend_buffer_free(pin);
-            pin = ggml_backend_buft_alloc_buffer(xdna_pinned_mem() ? xdna_vulkan().host_buft : ggml_backend_cpu_buffer_type(),
+            pin = ggml_backend_buft_alloc_buffer(xdna_pinned_mem() ? xdna_gpu_device().host_buft : ggml_backend_cpu_buffer_type(),
                                                  size);
             pin_size = pin ? size : 0;
         }
@@ -377,7 +381,7 @@ struct xdna_context {
         if (!best) {
             pin_buf nb = { nullptr, nullptr, n, false };
             if (pinned_mem) {
-                nb.buf = ggml_backend_buft_alloc_buffer(xdna_vulkan().host_buft, n);
+                nb.buf = ggml_backend_buft_alloc_buffer(xdna_gpu_device().host_buft, n);
                 if (!nb.buf) return nullptr;
                 nb.mem = ggml_backend_buffer_get_base(nb.buf);
             } else {
@@ -614,8 +618,8 @@ static void xdna_note_model(const ggml_tensor * op) {
 static void xdna_say_notes() {
     if (g_notes.said.exchange(true)) return;
     if (g_notes.moe.load())
-        GGML_LOG_WARN("xdna: mixture-of-experts model: routed experts and router logits stay on Vulkan; "
-                      "the NPU takes eligible ordinary prefill matrices. -dev Vulkan0 would use the GPU alone\n");
+        GGML_LOG_WARN("xdna: mixture-of-experts model: routed experts and router logits stay on the GPU; "
+                      "the NPU takes eligible ordinary prefill matrices. select the GPU device alone for a comparison\n");
     const int64_t width = g_notes.width.load();
     if (width != 0 && width < XDNA_NARROW_WIDTH)
         GGML_LOG_WARN("xdna: narrow model (width %lld): the GPU alone was faster than the NPU on every model this "
@@ -993,7 +997,7 @@ static void ggml_backend_xdna_device_get_props(ggml_backend_dev_t dev, ggml_back
 }
 
 static ggml_backend_t ggml_backend_xdna_device_init(ggml_backend_dev_t dev, const char * params) {
-    const xdna_vk & vk = xdna_vulkan();
+    const xdna_gpu & vk = xdna_gpu_device();
     if (!vk.dev) return nullptr;
     auto * ctx = new xdna_context;
     ctx->vk = ggml_backend_dev_init(vk.dev, nullptr);
@@ -1149,7 +1153,7 @@ static bool xdna_claim_mul_mat(const ggml_tensor * op) {
 // graph into pieces for nothing.
 static bool xdna_supports_op_policy(const ggml_tensor * op, int depth) {
     if ((env_int("GGML_XDNA_EXPLICIT_PHASE", 0) && g_phase == xdna_plan::automatic) ||
-        !xdna_vulkan().dev || g_npu_broken ||
+        !xdna_gpu_device().dev || g_npu_broken ||
         (g_phase != xdna_plan::automatic && g_phase != xdna_plan::prefill)) return false;
     if (op->op == GGML_OP_MUL_MAT) return xdna_claim_mul_mat(op);
 #ifdef XDNA_HAVE_NPU
@@ -1195,7 +1199,7 @@ static bool xdna_supports_op_policy(const ggml_tensor * op, int depth) {
 // came from. A piece whose one copied input came from the CPU could then
 // start reading Vulkan results before Vulkan had finished them.
 static bool ggml_backend_xdna_device_supports_buft(ggml_backend_dev_t dev, ggml_backend_buffer_type_t buft) {
-    const xdna_vk & vk = xdna_vulkan();
+    const xdna_gpu & vk = xdna_gpu_device();
     return (vk.buft != nullptr && buft == vk.buft) || ggml_backend_buft_is_host(buft);
     GGML_UNUSED(dev);
 }
@@ -1203,8 +1207,8 @@ static bool ggml_backend_xdna_device_supports_buft(ggml_backend_dev_t dev, ggml_
 // Vulkan's own buffer type: sharing it is what lets the scheduler hand ops
 // between us and Vulkan with no copies.
 static ggml_backend_buffer_type_t ggml_backend_xdna_device_get_buffer_type(ggml_backend_dev_t dev) {
-    const xdna_vk & vk = xdna_vulkan();
-    if (!vk.buft) GGML_ABORT(GGML_XDNA_DEVICE_NAME " needs the Vulkan backend loaded");
+    const xdna_gpu & vk = xdna_gpu_device();
+    if (!vk.buft) GGML_ABORT(GGML_XDNA_DEVICE_NAME " needs its selected GPU backend loaded");
     return vk.buft;
     GGML_UNUSED(dev);
 }

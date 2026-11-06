@@ -1,0 +1,20 @@
+FROM ubuntu:24.04 AS sdk
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && rm -rf /var/lib/apt/lists/*
+RUN curl --fail --location --retry 3 https://stable.repo.amd.com/rocm/core/tarball/therock-dist-linux-gfx1150-10.1.0.tar.gz -o /tmp/sdk.tar.gz && echo '515df1170721668427a602807043719e59937109863e0baa7566875e9fccf070  /tmp/sdk.tar.gz' | sha256sum -c - && mkdir /opt/rocm && tar -xzf /tmp/sdk.tar.gz -C /opt/rocm && rm /tmp/sdk.tar.gz
+RUN curl --fail --location --retry 3 https://github.com/ROCm/FastFlowLM/releases/download/v1.0.12/fastflowlm_1.0.12_linux.tar.gz -o /tmp/flm.tar.gz && echo '626fbee5e5206a215a8c2c4d3d961055cbf7289d257d36599e9fef38f2f555a8  /tmp/flm.tar.gz' | sha256sum -c - && mkdir /opt/flm && tar -xzf /tmp/flm.tar.gz -C /opt/flm && rm /tmp/flm.tar.gz
+
+FROM sdk AS build
+RUN apt-get update && apt-get install -y --no-install-recommends git cmake make g++ jq python3 libnuma-dev libdrm-dev uuid-dev libssl-dev zlib1g-dev && rm -rf /var/lib/apt/lists/*
+ENV PATH="/opt/rocm/bin:${PATH}" ROCM_PATH=/opt/rocm HIP_PATH=/opt/rocm HYBRID_GPU_BACKEND=rocm HYBRID_PACKAGE_SUFFIX=linux-rocm-gfx1150-x86_64
+WORKDIR /src
+COPY tools/build-llama.sh tools/
+COPY patches/ patches/
+RUN tools/build-llama.sh
+COPY . .
+RUN xrt=$(find /opt/flm -name libxrt_coreutil.so -print -quit) && test -n "$xrt" && cmake -S . -B build-linux -DCMAKE_BUILD_TYPE=Release -DGGML_XDNA_NPU=ON -DXRT_INCLUDE_DIR=/src/vendor/xrt/include -DXRT_COREUTIL="$xrt" && cmake --build build-linux -j4 && ctest --test-dir build-linux --output-on-failure -R '^(linux-launcher|insts-gen|bfp16-pack|hybrid-plan)$'
+RUN mkdir -p third_party/llama-b10944/xrt third_party/llama-b10944/rocm && xrt=$(find /opt/flm -name libxrt_coreutil.so -print -quit) && xrt_root=$(dirname "$(dirname "$(dirname "$xrt")")") && cp -a "$xrt_root/lib" third_party/llama-b10944/xrt/ && cp -a /opt/rocm/lib third_party/llama-b10944/rocm/ && find third_party/llama-b10944/rocm -type f -name '*.a' -delete && cp -a /opt/rocm/share/doc third_party/llama-b10944/rocm/licenses
+ARG SOURCE_REVISION=unknown
+RUN tools/package-linux.sh /out
+
+FROM scratch AS artifacts
+COPY --from=build /out/ /
