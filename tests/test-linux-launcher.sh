@@ -25,6 +25,7 @@ grep -qx 'XDNA0,Vulkan0' "$tmp/args"
 export TEST_DEVICES=rocm HYBRID_GPU_DEVICE=ROCm0
 "$tmp/hybrid-server" --model example.gguf > "$tmp/args" 2> "$tmp/log"
 grep -qx 'XDNA0,ROCm0' "$tmp/args"
+[[ $(grep -A1 '^--mmproj-device$' "$tmp/args" | tail -1) == ROCm0 ]]
 export HYBRID_GPU_DEVICE=Vulkan0
 if "$tmp/hybrid-server" --model example.gguf > /dev/null 2>&1; then
     echo 'FAIL: explicit GPU selection silently changed backend' >&2; exit 1

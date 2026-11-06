@@ -38,7 +38,7 @@ if [[ ${HYBRID_REQUIRE_NPU:-1} == 1 ]]; then
         exit 1
     fi
     exec "$root/llama-server" --device "XDNA0,$hybrid_gpu_device" --tensor-split 0,1 \
-        --n-gpu-layers 99 --batch-size 2048 --ubatch-size 2048 \
+        --n-gpu-layers 99 --mmproj-device "$hybrid_gpu_device" --batch-size 2048 --ubatch-size 2048 \
         --host 0.0.0.0 --port 8080 "$@"
 fi
 exec "$root/llama-server" --device "$hybrid_gpu_device" --n-gpu-layers 99 \

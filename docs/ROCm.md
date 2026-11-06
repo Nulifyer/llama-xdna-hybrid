@@ -11,6 +11,10 @@ The release archive includes isolated userspace libraries; it does not install
 host kernel drivers. Pass `/dev/dri`, `/dev/kfd`, `/dev/accel/accel0`, render/video
 groups and unlimited memlock to the consuming container.
 
+The launcher places the vision projector explicitly on the selected GPU. The
+hybrid helper is not a standalone projector backend; letting the projector
+follow the first device would choose XDNA0 and abort during warmup.
+
 Eligible prefill matrix operations use the NPU. Attention, routing, routed
 experts, recurrent state and decode remain on the GPU. Runtime packing of
 eligible weights is separate from converting the source GGUF: the source file
