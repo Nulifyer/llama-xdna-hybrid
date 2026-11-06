@@ -15,6 +15,10 @@ The launcher places the vision projector explicitly on the selected GPU. The
 hybrid helper is not a standalone projector backend; letting the projector
 follow the first device would choose XDNA0 and abort during warmup.
 
+Prompt-only batches remain prefill when MTP is enabled; speculative verification
+applies to generated-token batches. Native request counters must show prefill
+plans and NPU matrix work before a model run counts as hybrid acceptance.
+
 Eligible prefill matrix operations use the NPU. Attention, routing, routed
 experts, recurrent state and decode remain on the GPU. Runtime packing of
 eligible weights is separate from converting the source GGUF: the source file
