@@ -45,7 +45,9 @@ def run(request, hybrid=True):
         h = after["hybrid"]
         assert h["npu_pieces"] > before["hybrid"]["npu_pieces"]
         assert h["prefill_plans"] > before["hybrid"]["prefill_plans"]
-        assert h["decode_plans"] > before["hybrid"]["decode_plans"]
+        assert h["decode_plans"] + h["mixed_or_verify_plans"] > (
+            before["hybrid"]["decode_plans"] + before["hybrid"]["mixed_or_verify_plans"])
+        assert h["npu_matmul_nodes"] > before["hybrid"]["npu_matmul_nodes"]
         assert h["npu_planned_weight_bytes"] <= h["npu_copy_budget_bytes"]
         assert not h["npu_disabled"] and h["failures"] == 0
     messages += [{"role": "assistant", "content": "4"},
