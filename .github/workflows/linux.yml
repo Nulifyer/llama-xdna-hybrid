@@ -86,7 +86,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: linux-rocm-gfx1150-x86_64
-          path: release-rocm/*
+          path: |
+            release-rocm/*.tar.gz
+            release-rocm/SHA256SUMS
       - name: Publish experimental ROCm bundle
         if: startsWith(github.ref, 'refs/tags/linux-v')
         env:
